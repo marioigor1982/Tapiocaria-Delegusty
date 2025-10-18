@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { InstagramIcon } from './icons/InstagramIcon';
 import { SearchIcon } from './icons/SearchIcon';
@@ -184,7 +185,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
              <a 
                 href="#home" 
                 onClick={(e) => handleLinkClick(e, '#home')} 
-                className="fixed top-2 left-2 z-50 transition-transform duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-400/80 focus:rounded-full"
+                className="fixed top-2 left-4 z-50 transition-transform duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-400/80 focus:rounded-full"
                 aria-label="Voltar ao início"
             >
                 <img 

@@ -110,7 +110,7 @@ export const SALTY_TAPIOCAS: MenuItem[] = [
   {
     id: 29,
     name: 'PIZZA',
-    description: 'MANTEIGA, MUSARELA, TOMATE FATIADO, REQUEIJÃO E ORÉGANO.',
+    description: 'Uma explosão de sabor! Com mussarela derretida, tomate fatiado, requeijão cremoso, toque de manteiga e orégano para finalizar. Prática, saborosa e irresistível!',
     images: [{ url: 'https://i.postimg.cc/8cDVsHZS/comida-tipica-brasileira-de-tapioca-com-recheio-de-queijo-presunto-tomate-e-oregano-266402-296.jpg', isMain: true }],
     price: 'R$ 10,00',
   },
