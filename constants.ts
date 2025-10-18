@@ -420,7 +420,7 @@ export const BEBIDAS_E_OUTROS: MenuItem[] = [
     {
         id: 45,
         name: 'Goma de Tapioca 1kg',
-        description: 'Goma de tapioca caseira. Leve a Delegusty para sua casa!',
+        description: 'Goma de tapioca caseira. Leve a Delegusty para sua casa! Você vai ter a chance de dar um toque especial às suas receitas, seja no almoço, lanche da tarde ou jantar. Levou à frigideira? Está pronto! Solte a criatividade e crie recheios e acompanhamentos deliciosos.',
         images: [{ url: 'https://i.postimg.cc/2y7QQkm4/Fecula-de-Mandioca.jpg', isMain: true }],
         price: 'R$ 10,00',
     }
