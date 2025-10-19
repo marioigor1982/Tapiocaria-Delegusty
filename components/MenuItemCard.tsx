@@ -35,18 +35,20 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, imageFit = '
         />
       </div>
       <div className="p-5 flex flex-col flex-grow">
-        <div className="flex justify-between items-start mb-2">
-            <h4 className="text-xl font-bold text-orange-900 pr-2">{item.name}</h4>
+        <div className="mb-2">
+            <h4 className="text-xl font-bold text-orange-900">{item.name}</h4>
+        </div>
+        <p className="text-gray-600 text-sm flex-grow">{item.description}</p>
+        <div className="flex justify-between items-center mt-4">
+            <p className="text-lg font-bold text-orange-700">{item.price}</p>
             {item.rating && (
-            <div className="flex items-center flex-shrink-0">
+            <div className="flex items-center">
                 {Array.from({ length: item.rating }).map((_, i) => (
                 <StarIcon key={i} className="w-4 h-4 text-yellow-400" />
                 ))}
             </div>
             )}
         </div>
-        <p className="text-gray-600 text-sm flex-grow">{item.description}</p>
-        <p className="text-lg font-bold text-orange-700 mt-4">{item.price}</p>
       </div>
     </div>
   );
