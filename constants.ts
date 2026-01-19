@@ -243,7 +243,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     name: 'GOIABADA',
     description: 'COCO RALADO, GOIABADA LÍQUIDA E LEITE CONDENSADO',
     images: [
-      { url: 'https://amodadoflavio.pt/ophaboah/2019/05/Tapioca-de-goiabada-com-queijo-creme.png', isMain: true },
+      { url: 'https://i.postimg.cc/L4wdfCDg/befoods-tbf6653-66c8dfb75389a.jpg', isMain: true },
     ],
     price: 'R$ 9,00',
   },
@@ -268,7 +268,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
   {
     id: 26,
     name: 'BANANA COM NUTELLA',
-    description: 'BANANA FATIADA E NUTELLA.',
+    description: 'BANANA FATIADA e NUTELLA.',
     images: [
         { url: 'https://receitasdepesos.com.br/wp-content/uploads/2023/08/shutterstock_1152917999.jpg', isMain: true },
         { url: 'https://s3-sa-east-1.amazonaws.com/deliveryon-uploads/products/imperio/30_5c58a760b2f3e.jpg', isMain: false },
@@ -279,7 +279,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
   {
     id: 27,
     name: 'MORANGO COM NUTELLA',
-    description: 'MORANGO FATIADO E NUTELLA.',
+    description: 'MORANGO FATIADA E NUTELLA.',
     images: [
         { url: 'https://cozidoeassado.com/wp-content/uploads/2023/08/tapioca-de-nutella-e-morango.webp', isMain: true },
         { url: 'https://seguiareceita.com/wp-content/uploads/2024/01/Tapioca-de-Nutella-e-Morango-1024x457.jpg', isMain: false },
