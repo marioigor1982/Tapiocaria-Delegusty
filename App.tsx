@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import Footer from './components/Footer';
@@ -21,10 +21,13 @@ const App: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [targetAnchor, setTargetAnchor] = useState<string | null>(null);
 
-  const saltyWithCategory = SALTY_TAPIOCAS.map(item => ({ ...item, category: 'salgadas' as Page }));
-  const sweetWithCategory = SWEET_TAPIOCAS.map(item => ({ ...item, category: 'doces' as Page }));
-  const drinksWithCategory = BEBIDAS_E_OUTROS.map(item => ({ ...item, category: 'bebidas' as Page }));
-  const allItems = [...saltyWithCategory, ...sweetWithCategory, ...drinksWithCategory];
+  // Memoize all items with their category for URL lookups
+  const allItems = useMemo(() => {
+    const salty = SALTY_TAPIOCAS.map(item => ({ ...item, category: 'salgadas' as Page }));
+    const sweet = SWEET_TAPIOCAS.map(item => ({ ...item, category: 'doces' as Page }));
+    const drinks = BEBIDAS_E_OUTROS.map(item => ({ ...item, category: 'bebidas' as Page }));
+    return [...salty, ...sweet, ...drinks];
+  }, []);
 
   // Logic to parse the current URL and update state
   const parseUrl = useCallback(() => {
@@ -38,6 +41,8 @@ const App: React.FC = () => {
         const item = allItems.find(i => slugify(i.name) === productSlug && i.category === category);
         if (item) {
           setSelectedItem(item);
+        } else {
+          setSelectedItem(null);
         }
       } else {
         setSelectedItem(null);
@@ -48,13 +53,14 @@ const App: React.FC = () => {
     }
   }, [allItems]);
 
-  // Sync state with browser navigation (back/forward)
+  // Sync state with browser navigation
   useEffect(() => {
     parseUrl();
     window.addEventListener('popstate', parseUrl);
     return () => window.removeEventListener('popstate', parseUrl);
   }, [parseUrl]);
 
+  // Update URL function
   const updateUrl = (page: Page, item?: MenuItem) => {
     let newPath = '/';
     if (page !== 'home') {
@@ -89,9 +95,8 @@ const App: React.FC = () => {
 
   const handleShowItemDetails = (item: MenuItem) => {
     setSelectedItem(item);
-    if (item.category) {
-      updateUrl(item.category, item);
-    }
+    const category = item.category || currentPage;
+    updateUrl(category as Page, item);
   };
 
   const handleCloseModal = () => {

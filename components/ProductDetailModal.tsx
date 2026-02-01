@@ -36,36 +36,40 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose }
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-title"
     >
       <div 
-        className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-scale-up"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden animate-grow-modal"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={onClose} 
-          className="absolute top-3 right-3 text-gray-500 hover:text-gray-900 transition-colors z-20 bg-white/50 rounded-full p-1"
+          className="absolute top-4 right-4 text-gray-500 hover:text-orange-600 transition-all duration-300 z-20 bg-white/80 rounded-full p-1.5 shadow-md hover:scale-110"
           aria-label="Fechar"
         >
           <CloseIcon className="w-6 h-6" />
         </button>
 
         {/* Image Gallery */}
-        <div className="w-full md:w-1/2 p-4 flex flex-col gap-4">
-            <div className="aspect-w-1 aspect-h-1 bg-gray-100 rounded-lg overflow-hidden">
-                <img src={activeImage.url} alt={`Imagem principal de ${item.name}`} className="w-full h-full object-cover" />
+        <div className="w-full md:w-1/2 p-6 flex flex-col gap-4 bg-orange-50/30">
+            <div className="aspect-square bg-white rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+                <img 
+                    src={activeImage.url} 
+                    alt={`Imagem principal de ${item.name}`} 
+                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-110" 
+                />
             </div>
             {item.images.length > 1 && (
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-3 mt-2">
                     {item.images.map((image, index) => (
                         <button 
                             key={index}
                             onClick={() => setActiveImage(image)}
-                            className={`aspect-w-1 aspect-h-1 rounded-md overflow-hidden ring-2 ring-offset-2 transition-all ${activeImage.url === image.url ? 'ring-orange-500' : 'ring-transparent hover:ring-orange-300'}`}
+                            className={`aspect-square rounded-lg overflow-hidden ring-2 ring-offset-2 transition-all duration-300 ${activeImage.url === image.url ? 'ring-orange-500 scale-105' : 'ring-transparent hover:ring-orange-300'}`}
                             aria-label={`Ver imagem ${index + 1} de ${item.name}`}
                         >
                              <img src={image.url} alt={`Miniatura ${index + 1} de ${item.name}`} className="w-full h-full object-cover" />
@@ -76,10 +80,23 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose }
         </div>
 
         {/* Product Details */}
-        <div className="w-full md:w-1/2 p-6 flex flex-col justify-center overflow-y-auto">
-          <h3 id="product-title" className="text-3xl font-bold text-orange-900 mb-4 font-ubuntu">{item.name}</h3>
-          <p className="text-gray-600 mb-6 leading-relaxed">{item.description}</p>
-          <p className="text-3xl font-bold text-orange-700 mt-auto">{item.price}</p>
+        <div className="w-full md:w-1/2 p-8 flex flex-col justify-center overflow-y-auto">
+          <span className="text-orange-500 font-semibold text-sm uppercase tracking-widest mb-2">Detalhes do Produto</span>
+          <h3 id="product-title" className="text-4xl font-bold text-orange-900 mb-6 font-ubuntu leading-tight">{item.name}</h3>
+          <p className="text-gray-700 text-lg mb-8 leading-relaxed border-l-4 border-orange-200 pl-4">{item.description}</p>
+          
+          <div className="mt-auto flex items-end justify-between">
+            <div className="flex flex-col">
+                <span className="text-gray-400 text-sm">Preço</span>
+                <p className="text-4xl font-black text-orange-700">{item.price}</p>
+            </div>
+            <button 
+                onClick={onClose}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-orange-200"
+            >
+                Fechar
+            </button>
+          </div>
         </div>
       </div>
        <style>{`
@@ -87,12 +104,12 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose }
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        @keyframes scale-up {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        @keyframes grow-modal {
+            0% { transform: scale(0.6); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1); opacity: 1; filter: blur(0); }
         }
-        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
-        .animate-scale-up { animation: scale-up 0.3s ease-out forwards; }
+        .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-grow-modal { animation: grow-modal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}</style>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { MenuItem } from '../types';
 
@@ -20,29 +19,34 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onClick, imageFit = '
 
   return (
     <div 
-      className="bg-white rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 group flex flex-col cursor-pointer"
+      className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-3 hover:scale-[1.03] transition-all duration-500 group flex flex-col cursor-pointer ring-0 hover:ring-4 hover:ring-orange-200"
       onClick={onClick}
       onKeyPress={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
       role="button"
       tabIndex={0}
       aria-label={`Ver detalhes de ${item.name}`}
     >
-      <div className="overflow-hidden h-48 bg-white">
+      <div className="overflow-hidden h-52 bg-white relative">
         <img
           src={imageUrl}
           alt={item.name}
-          className={`w-full h-full ${imageFit === 'contain' ? 'object-contain p-2' : 'object-cover'} group-hover:scale-110 transition-transform duration-500`}
+          className={`w-full h-full ${imageFit === 'contain' ? 'object-contain p-4' : 'object-cover'} group-hover:scale-110 transition-transform duration-700`}
         />
-      </div>
-      <div className="p-5 flex flex-col flex-grow">
-        <div className="mb-2">
-            <h4 className="text-xl font-bold text-orange-900">{item.name}</h4>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500 flex items-center justify-center">
+            <span className="bg-orange-600 text-white px-4 py-2 rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 shadow-lg">
+                Ver detalhes
+            </span>
         </div>
-        <p className="text-gray-600 text-sm flex-grow">{item.description}</p>
-        <div className="flex justify-between items-center mt-4">
-            <p className="text-lg font-bold text-orange-700">{item.price}</p>
+      </div>
+      <div className="p-6 flex flex-col flex-grow bg-white">
+        <div className="mb-2">
+            <h4 className="text-xl font-bold text-orange-900 group-hover:text-orange-600 transition-colors">{item.name}</h4>
+        </div>
+        <p className="text-gray-500 text-sm flex-grow line-clamp-2">{item.description}</p>
+        <div className="flex justify-between items-center mt-5">
+            <p className="text-2xl font-black text-orange-700">{item.price}</p>
             {item.rating && (
-            <div className="flex items-center">
+            <div className="flex items-center gap-0.5">
                 {Array.from({ length: item.rating }).map((_, i) => (
                 <StarIcon key={i} className="w-4 h-4 text-yellow-400" />
                 ))}
