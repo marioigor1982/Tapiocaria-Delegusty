@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import Footer from './components/Footer';
@@ -7,6 +7,14 @@ import MenuPage from './components/MenuPage';
 import ProductDetailModal from './components/ProductDetailModal';
 import { SALTY_TAPIOCAS, SWEET_TAPIOCAS, BEBIDAS_E_OUTROS } from './constants';
 import type { Page, MenuItem } from './types';
+
+// Utility to create URL slugs
+const slugify = (text: string) => 
+  text.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, '-')
+    .replace(/[^\w-]+/g, '');
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -18,9 +26,54 @@ const App: React.FC = () => {
   const drinksWithCategory = BEBIDAS_E_OUTROS.map(item => ({ ...item, category: 'bebidas' as Page }));
   const allItems = [...saltyWithCategory, ...sweetWithCategory, ...drinksWithCategory];
 
+  // Logic to parse the current URL and update state
+  const parseUrl = useCallback(() => {
+    const path = window.location.pathname.split('/').filter(Boolean);
+    const category = path[0] as Page;
+    const productSlug = path[1];
+
+    if (category && ['doces', 'salgadas', 'bebidas'].includes(category)) {
+      setCurrentPage(category);
+      if (productSlug) {
+        const item = allItems.find(i => slugify(i.name) === productSlug && i.category === category);
+        if (item) {
+          setSelectedItem(item);
+        }
+      } else {
+        setSelectedItem(null);
+      }
+    } else {
+      setCurrentPage('home');
+      setSelectedItem(null);
+    }
+  }, [allItems]);
+
+  // Sync state with browser navigation (back/forward)
+  useEffect(() => {
+    parseUrl();
+    window.addEventListener('popstate', parseUrl);
+    return () => window.removeEventListener('popstate', parseUrl);
+  }, [parseUrl]);
+
+  const updateUrl = (page: Page, item?: MenuItem) => {
+    let newPath = '/';
+    if (page !== 'home') {
+      newPath = `/${page}`;
+      if (item) {
+        newPath += `/${slugify(item.name)}`;
+      }
+    }
+    
+    if (window.location.pathname !== newPath) {
+      window.history.pushState(null, '', newPath);
+    }
+  };
+
   const handleNavigation = (page: Page, anchor?: string) => {
     setCurrentPage(page);
-    setTargetAnchor(anchor || null); 
+    setTargetAnchor(anchor || null);
+    setSelectedItem(null);
+    updateUrl(page);
 
     if (page === 'home' && anchor) {
       setTimeout(() => {
@@ -34,17 +87,26 @@ const App: React.FC = () => {
     }
   };
 
+  const handleShowItemDetails = (item: MenuItem) => {
+    setSelectedItem(item);
+    if (item.category) {
+      updateUrl(item.category, item);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+    updateUrl(currentPage);
+  };
+
   const handleSearchResultSelect = (item: MenuItem) => {
     if (item.category) {
         handleNavigation(item.category, `#item-${item.id}`);
+        handleShowItemDetails(item);
     }
   };
 
   const goHome = () => handleNavigation('home');
-
-  const handleShowItemDetails = (item: MenuItem) => {
-    setSelectedItem(item);
-  };
 
   return (
     <div className="bg-orange-50 min-h-screen text-gray-800">
@@ -82,7 +144,7 @@ const App: React.FC = () => {
       </main>
       <Footer />
       <FloatingWhatsApp />
-      {selectedItem && <ProductDetailModal item={selectedItem} onClose={() => setSelectedItem(null)} />}
+      {selectedItem && <ProductDetailModal item={selectedItem} onClose={handleCloseModal} />}
     </div>
   );
 };

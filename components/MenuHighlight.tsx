@@ -20,7 +20,7 @@ const MenuHighlight: React.FC<MenuHighlightProps> = ({ onNavigate }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                     <CategoryCard
                         title="Tapiocas Doces"
-                        imageUrl="https://www.mika.com.br/image/d2lkdGg9NTIwJmhlaWdodD0zMzAmemM9MSZxPTk5JnNyYz1pbWcvcmVjZWl0YXMvZm90b180Ni5qcGcmc2VjdXJlPXtidXJufQ==.jpg"
+                        imageUrl="https://i.postimg.cc/bJMV1bSW/tapioca_morango_com_nutella.png"
                         onClick={() => onNavigate('doces')}
                     />
                     <CategoryCard
