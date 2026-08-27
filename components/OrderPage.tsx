@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { MenuItem } from '../types';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import ProductDetailModal from './ProductDetailModal';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -65,6 +66,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [customerName, setCustomerName] = useState('');
   const [observations, setObservations] = useState('');
   const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
+  const [selectedDetailItem, setSelectedDetailItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -319,103 +321,169 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           </div>
         </div>
 
-        {/* Product Items List Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredItems.map((item) => {
-            const qty = quantities[item.id] || 0;
-            const unitPrice = parsePrice(item.price);
-            const subtotal = unitPrice * qty;
-            const mainImage = item.images.find((img) => img.isMain) || item.images[0];
-
-            return (
-              <div
-                key={item.id}
-                className={`bg-white rounded-2xl p-4 border transition-all duration-200 flex items-center justify-between gap-4 shadow-sm hover:shadow-md ${
-                  qty > 0 ? 'border-orange-400 ring-2 ring-orange-200 bg-orange-50/20' : 'border-stone-200'
-                }`}
+        {/* Product Items List - Clean Rows for Mobile & Desktop */}
+        <div className="space-y-3.5">
+          {filteredItems.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-stone-200 shadow-sm my-6">
+              <span className="text-3xl mb-2 block">🔍</span>
+              <h3 className="text-lg font-bold text-stone-800">Nenhum produto encontrado</h3>
+              <p className="text-sm text-stone-500 mt-1">Tente buscar por outro sabor ou selecione outra categoria.</p>
+              <button
+                type="button"
+                onClick={() => { setSearchTerm(''); setActiveCategory('all'); }}
+                className="mt-4 px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl hover:bg-orange-700 transition-colors"
               >
-                {/* Image on left */}
-                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0 shadow-inner">
-                  {mainImage ? (
-                    <img
-                      src={mainImage.url}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs">
-                      Sem foto
-                    </div>
-                  )}
-                  <span className="absolute top-1 left-1 bg-black/60 backdrop-blur-xs text-white text-[10px] font-black px-1.5 py-0.5 rounded">
-                    #{item.id}
-                  </span>
-                </div>
+                Ver todos os sabores
+              </button>
+            </div>
+          ) : (
+            filteredItems.map((item) => {
+              const qty = quantities[item.id] || 0;
+              const unitPrice = parsePrice(item.price);
+              const subtotal = unitPrice * qty;
+              const mainImage = item.images.find((img) => img.isMain) || item.images[0];
 
-                {/* Name & Ingredients in middle */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-bold text-stone-900 truncate leading-snug">
-                    {item.name}
-                  </h3>
-                  <p className="text-xs text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">
-                    {item.description}
-                  </p>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-sm sm:text-base font-black text-orange-700">
-                      {item.price}
-                    </span>
-                    {qty > 0 && (
-                      <span className="text-xs font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                        Subtotal: {formatPrice(subtotal)}
+              return (
+                <div
+                  key={item.id}
+                  className={`bg-white rounded-2xl p-3.5 sm:p-4 border transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-sm hover:shadow-md ${
+                    qty > 0 ? 'border-orange-400 ring-2 ring-orange-200 bg-orange-50/20' : 'border-stone-200'
+                  }`}
+                >
+                  {/* Left block: Image + Name + Full Description */}
+                  <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
+                    {/* Image with click-to-view-details */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDetailItem(item)}
+                      className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0 shadow-inner group cursor-pointer border border-stone-200 text-left focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      title="Clique para ver fotos e detalhes"
+                      aria-label={`Ver fotos e detalhes de ${item.name}`}
+                    >
+                      {mainImage ? (
+                        <img
+                          src={mainImage.url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-stone-400 text-xs">
+                          Sem foto
+                        </div>
+                      )}
+                      
+                      {/* ID tag */}
+                      <span className="absolute top-1 left-1 bg-black/60 backdrop-blur-xs text-white text-[10px] font-black px-1.5 py-0.5 rounded">
+                        #{item.id}
                       </span>
-                    )}
-                  </div>
-                </div>
 
-                {/* Quantity Stepper on Right */}
-                <div className="flex flex-col items-center justify-center flex-shrink-0">
-                  <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner">
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(item.id, qty - 1)}
-                      disabled={qty <= 0}
-                      className={`w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg transition-all ${
-                        qty > 0
-                          ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm'
-                          : 'text-stone-300 cursor-not-allowed'
-                      }`}
-                      aria-label="Diminuir quantidade"
-                    >
-                      -
+                      {/* Zoom hint overlay */}
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-[11px] font-bold bg-black/70 px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                          🔍 Ver fotos
+                        </span>
+                      </div>
+
+                      {item.images.length > 1 && (
+                        <span className="absolute bottom-1 right-1 bg-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow">
+                          +{item.images.length - 1} foto{item.images.length > 2 ? 's' : ''}
+                        </span>
+                      )}
                     </button>
 
-                    <input
-                      type="number"
-                      min="0"
-                      max="99"
-                      value={qty === 0 ? '' : qty}
-                      placeholder="0"
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        handleQuantityChange(item.id, isNaN(val) ? 0 : val);
-                      }}
-                      className="w-10 text-center font-black text-base bg-transparent focus:outline-none focus:bg-white focus:rounded-md py-1 text-stone-900"
-                    />
+                    {/* Product Name & Complete Ingredients Description */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailItem(item)}
+                          className="text-left font-ubuntu font-bold text-base sm:text-lg text-stone-900 hover:text-orange-600 transition-colors leading-snug cursor-pointer group"
+                        >
+                          <span className="group-hover:underline">{item.name}</span>
+                        </button>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          item.category === 'salgadas' ? 'bg-amber-100 text-amber-800' :
+                          item.category === 'doces' ? 'bg-pink-100 text-pink-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {item.category === 'salgadas' ? 'Salgada' : item.category === 'doces' ? 'Doce' : 'Bebida/Goma'}
+                        </span>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleQuantityChange(item.id, qty + 1)}
-                      className="w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105"
-                      aria-label="Adicionar quantidade"
-                    >
-                      +
-                    </button>
+                      {/* Full description clearly visible on mobile and desktop without truncation */}
+                      <p className="text-xs sm:text-sm text-stone-600 mt-1 leading-relaxed">
+                        {item.description}
+                      </p>
+
+                      {/* Details trigger button */}
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDetailItem(item)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors py-0.5"
+                        >
+                          <span>🔍 Ver detalhes e fotos</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right block: Price + Subtotal + Quantity Stepper */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-stone-100 sm:border-t-0 flex-shrink-0">
+                    <div className="flex flex-col items-start sm:items-end">
+                      <span className="text-base sm:text-lg font-black text-orange-700">
+                        {item.price}
+                      </span>
+                      {qty > 0 && (
+                        <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200 whitespace-nowrap mt-0.5">
+                          Subtotal: {formatPrice(subtotal)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Quantity Stepper */}
+                    <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange(item.id, qty - 1)}
+                        disabled={qty <= 0}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all ${
+                          qty > 0
+                            ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm active:scale-95'
+                            : 'text-stone-300 cursor-not-allowed'
+                        }`}
+                        aria-label="Diminuir quantidade"
+                      >
+                        -
+                      </button>
+
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={qty === 0 ? '' : qty}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          handleQuantityChange(item.id, isNaN(val) ? 0 : val);
+                        }}
+                        className="w-10 text-center font-black text-base bg-transparent focus:outline-none focus:bg-white focus:rounded-md py-1 text-stone-900"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuantityChange(item.id, qty + 1)}
+                        className="w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105 active:scale-95"
+                        aria-label="Adicionar quantidade"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Sticky Floating Bottom Bar for Checkout */}
@@ -572,6 +640,15 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
               </div>
             </div>
           </div>
+        )}
+        {/* Product Details Modal */}
+        {selectedDetailItem && (
+          <ProductDetailModal
+            item={selectedDetailItem}
+            currentQuantity={quantities[selectedDetailItem.id] || 0}
+            onQuantityChange={handleQuantityChange}
+            onClose={() => setSelectedDetailItem(null)}
+          />
         )}
       </div>
     </div>
