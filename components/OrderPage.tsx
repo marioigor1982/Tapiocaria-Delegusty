@@ -233,8 +233,18 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           {/* Delivery on iFood */}
           <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center flex-shrink-0 font-bold p-1">
-                <img src="https://i.imgur.com/yf7wkik.png" alt="iFood" className="w-full h-full object-contain rounded-full" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
+                <img 
+                  src="https://i.imgur.com/YQ6qvQg.png" 
+                  alt="iFood" 
+                  className="w-full h-full object-cover rounded-full" 
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('YQ6qvQg.jpg')) {
+                      target.src = 'https://i.imgur.com/YQ6qvQg.jpg';
+                    }
+                  }} 
+                />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-red-950">Quer Entrega em Domicílio?</h3>

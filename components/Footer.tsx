@@ -124,18 +124,18 @@ const Footer: React.FC = () => {
                 href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-white rounded-full transition-all hover:scale-105 p-1 overflow-hidden shadow-sm border border-stone-600"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
                 aria-label="iFood"
                 title="Peça no iFood"
               >
                 <img 
-                  src="https://i.imgur.com/yf7wkik.png" 
+                  src="https://i.imgur.com/YQ6qvQg.png" 
                   alt="iFood" 
-                  className="w-full h-full object-contain rounded-full"
+                  className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('yf7wkik.jpg')) {
-                      target.src = 'https://i.imgur.com/yf7wkik.jpg';
+                    if (!target.src.includes('YQ6qvQg.jpg')) {
+                      target.src = 'https://i.imgur.com/YQ6qvQg.jpg';
                     }
                   }}
                 />
