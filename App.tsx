@@ -135,7 +135,7 @@ const App: React.FC = () => {
                                         items={SWEET_TAPIOCAS} 
                                         onBack={goHome} 
                                         onSelectItem={handleShowItemDetails}
-                                        backgroundImage="https://i.imgur.com/elLtY0I.jpg"
+                                        backgroundImage="https://i.imgur.com/sRE8o8g.jpg"
                                         targetAnchor={targetAnchor}
                                     />}
         {currentPage === 'bebidas' && <MenuPage 

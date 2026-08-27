@@ -108,13 +108,15 @@ const Footer: React.FC = () => {
                 title="Peça no iFood"
               >
                 <img 
-                  src="https://i.imgur.com/TWzAuzB.png" 
+                  src="https://i.imgur.com/PgGLJRS.png" 
                   alt="iFood" 
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('.jpg')) {
-                      target.src = 'https://i.imgur.com/TWzAuzB.jpg';
+                    if (!target.src.includes('PgGLJRS.jpg')) {
+                      target.src = 'https://i.imgur.com/PgGLJRS.jpg';
+                    } else if (!target.src.includes('TWzAuzB.png')) {
+                      target.src = 'https://i.imgur.com/TWzAuzB.png';
                     }
                   }}
                 />

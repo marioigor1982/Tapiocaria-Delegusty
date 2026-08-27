@@ -9,7 +9,6 @@ const InstagramCarousel: React.FC = () => {
                 <iframe
                     src={embedUrl}
                     className="w-full h-full border-0"
-                    allowTransparency={true}
                     allowFullScreen={true}
                     scrolling="no"
                     loading="lazy"
