@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
+import FloatingIFood from './components/FloatingIFood';
+import OrderModal from './components/OrderModal';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import MenuPage from './components/MenuPage';
@@ -20,8 +22,10 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [targetAnchor, setTargetAnchor] = useState<string | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
+  const [preselectedOrderItemId, setPreselectedOrderItemId] = useState<number | undefined>(undefined);
 
-  // Memoize all items with their category for URL lookups
+  // Memoize all items with their category for URL lookups and ordering
   const allItems = useMemo(() => {
     const salty = SALTY_TAPIOCAS.map(item => ({ ...item, category: 'salgadas' as Page }));
     const sweet = SWEET_TAPIOCAS.map(item => ({ ...item, category: 'doces' as Page }));
@@ -111,6 +115,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenOrder = (item?: MenuItem) => {
+    if (item) {
+      setPreselectedOrderItemId(item.id);
+    } else {
+      setPreselectedOrderItemId(undefined);
+    }
+    setIsOrderModalOpen(true);
+  };
+
+  const handleCloseOrder = () => {
+    setIsOrderModalOpen(false);
+    setPreselectedOrderItemId(undefined);
+  };
+
   const goHome = () => handleNavigation('home');
 
   return (
@@ -119,9 +137,15 @@ const App: React.FC = () => {
         onNavigate={handleNavigation} 
         allItems={allItems}
         onSearchResultSelect={handleSearchResultSelect}
+        onOpenOrder={() => handleOpenOrder()}
       />
       <main>
-        {currentPage === 'home' && <HomePage onNavigate={(category) => handleNavigation(category)} />}
+        {currentPage === 'home' && (
+          <HomePage 
+            onNavigate={(category) => handleNavigation(category)} 
+            onOpenOrder={() => handleOpenOrder()}
+          />
+        )}
         {currentPage === 'salgadas' && <MenuPage 
                                             title="Tapiocas Salgadas" 
                                             items={SALTY_TAPIOCAS} 
@@ -135,7 +159,7 @@ const App: React.FC = () => {
                                         items={SWEET_TAPIOCAS} 
                                         onBack={goHome} 
                                         onSelectItem={handleShowItemDetails}
-                                        backgroundImage="https://i.imgur.com/sRE8o8g.jpg"
+                                        backgroundImage="https://imgur.com/sRE8o8g.jpg"
                                         targetAnchor={targetAnchor}
                                     />}
         {currentPage === 'bebidas' && <MenuPage 
@@ -148,8 +172,30 @@ const App: React.FC = () => {
                                       />}
       </main>
       <Footer />
-      <FloatingWhatsApp />
-      {selectedItem && <ProductDetailModal item={selectedItem} onClose={handleCloseModal} />}
+
+      {/* Floating Buttons: Only shown on Home page as requested */}
+      {currentPage === 'home' && (
+        <>
+          <FloatingIFood />
+          <FloatingWhatsApp />
+        </>
+      )}
+
+      {selectedItem && (
+        <ProductDetailModal 
+          item={selectedItem} 
+          onClose={handleCloseModal}
+          onOrder={(item) => handleOpenOrder(item)}
+        />
+      )}
+
+      {isOrderModalOpen && (
+        <OrderModal 
+          allItems={allItems}
+          initialItemId={preselectedOrderItemId}
+          onClose={handleCloseOrder}
+        />
+      )}
     </div>
   );
 };

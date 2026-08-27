@@ -7,12 +7,13 @@ type Page = 'doces' | 'salgadas' | 'bebidas';
 
 interface HomePageProps {
     onNavigate: (page: Page) => void;
+    onOpenOrder?: () => void;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
+const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) => {
   return (
     <>
-      <Hero />
+      <Hero onOpenOrder={onOpenOrder} />
       <AboutUs />
       <MenuHighlight onNavigate={onNavigate} />
     </>

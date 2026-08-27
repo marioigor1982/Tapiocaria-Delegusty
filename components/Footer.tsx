@@ -73,17 +73,17 @@ const Footer: React.FC = () => {
           <div className="md:pr-4">
             <div className="flex items-center mb-6">
                 <img src="https://i.postimg.cc/4yJKJtq6/Delegusty.png" alt="Delegusty Logo" className="h-12 w-auto" />
-                <span className="font-story-script text-white text-2xl ml-2">Tapiocaria Delegusty</span>
+                <span className="font-kievit-serif font-bold text-white text-2xl ml-2">Tapioca Delegusty</span>
             </div>
             <p className="text-sm leading-relaxed mb-6">
               Nascida da paixão pela culinária brasileira, a Delegusty combina tradição e criatividade para levar até você uma experiência única e deliciosa, com ingredientes sempre frescos.
             </p>
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap gap-2.5">
               <a
                 href="https://www.instagram.com/delegusty.tapioca?igsh=YjZld3hheDN2eGMz"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-orange-600 text-white rounded-full transition-colors hover:bg-orange-500"
+                className="w-10 h-10 flex items-center justify-center bg-orange-600 text-white rounded-full transition-all hover:bg-orange-500 hover:scale-105 shadow-sm"
                 aria-label="Instagram"
                 title="Siga-nos no Instagram"
               >
@@ -93,30 +93,49 @@ const Footer: React.FC = () => {
                 href="https://wa.me/5511922099496"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-green-500 text-white rounded-full transition-colors hover:bg-green-400"
+                className="w-10 h-10 flex items-center justify-center bg-green-500 text-white rounded-full transition-all hover:bg-green-400 hover:scale-105 shadow-sm"
                 aria-label="WhatsApp"
                 title="Fale conosco no WhatsApp"
               >
                 <WhatsAppIcon className="w-5 h-5" />
               </a>
               <a
-                href="https://l.instagram.com/?u=https%3A%2F%2Fwww.ifood.com.br%2Fdelivery%2Fsao-paulo-sp%2Ftapiocas-delegusty-conjunto-habitacional-instituto-adventista%2Fa23a8762-6b06-4ee3-85b0-94ab21a38799%3FUTM_Medium%3Dshare%26utm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAaejiVzJfhyXAurgwAY-OWq5EHXUtyU_RIzqr1ThGRb3G3p6QMmBg6oqxQeSUA_aem_PdbaCsABhN-1hzKglCfMwg&e=AUDH0D5aFinRf5FUvptO_hJt1x2HkDPwvWBgPL1JIyzmtfaIj1H9Zz0nqPlT8FP9oCYtsOzZc6j2scvYJx_fiumO_uly49d398Y6kjud1fUvy1vr_K_IzxSofshVikhz8CZhAA4"
+                href="https://www.tiktok.com/@delegusty.tapioca?_r=1&_t=ZS-99DdqnwOdLY"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-red-600 text-white rounded-full transition-colors hover:bg-red-500 p-1.5 overflow-hidden shadow-sm"
+                className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full transition-all hover:bg-neutral-800 hover:scale-105 p-2 shadow-sm border border-stone-700"
+                aria-label="TikTok"
+                title="Siga-nos no TikTok"
+              >
+                <img 
+                  src="https://img.icons8.com/?size=100&id=118640&format=png&color=ffffff" 
+                  alt="TikTok" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('color=000000')) {
+                      target.src = 'https://img.icons8.com/?size=100&id=118640&format=png&color=000000';
+                      target.className = 'w-full h-full object-contain invert';
+                    }
+                  }}
+                />
+              </a>
+              <a
+                href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center bg-white rounded-full transition-all hover:scale-105 p-1 overflow-hidden shadow-sm border border-stone-600"
                 aria-label="iFood"
                 title="Peça no iFood"
               >
                 <img 
-                  src="https://i.imgur.com/PgGLJRS.png" 
+                  src="https://i.imgur.com/yf7wkik.png" 
                   alt="iFood" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain rounded-full"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('PgGLJRS.jpg')) {
-                      target.src = 'https://i.imgur.com/PgGLJRS.jpg';
-                    } else if (!target.src.includes('TWzAuzB.png')) {
-                      target.src = 'https://i.imgur.com/TWzAuzB.png';
+                    if (!target.src.includes('yf7wkik.jpg')) {
+                      target.src = 'https://i.imgur.com/yf7wkik.jpg';
                     }
                   }}
                 />
@@ -125,7 +144,7 @@ const Footer: React.FC = () => {
                 href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view?usp=drive_link"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-stone-600 text-white rounded-full transition-colors hover:bg-stone-500"
+                className="w-10 h-10 flex items-center justify-center bg-stone-600 text-white rounded-full transition-all hover:bg-stone-500 hover:scale-105 shadow-sm"
                 aria-label="Baixe nosso cardápio"
                 title="Baixe nosso cardápio"
               >
@@ -140,8 +159,13 @@ const Footer: React.FC = () => {
             <ul className="space-y-4 text-sm">
               <li className="flex items-start">
                 <MapPinIcon className="w-5 h-5 mr-3 mt-0.5 text-orange-400 flex-shrink-0" />
-                <a href="https://www.google.com/maps/search/?api=1&query=Estr.+de+Itapecerica,+7796+-+Capao+Redondo,+S%C3%A3o+Paulo+-+SP,+05858-005" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition-colors">
-                  Estr. de Itapecerica, 7796 - Capao Redondo, São Paulo - SP, 05858-005, Brazil
+                <a 
+                  href="https://www.google.com/maps/search/?api=1&query=Travessa+Casca+Preciosa,+54+-+Cohab+Adventista,+S%C3%A3o+Paulo+-+SP,+CEP+05868-140" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="hover:text-orange-400 transition-colors"
+                >
+                  Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140
                 </a>
               </li>
               <li className="flex items-start">

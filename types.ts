@@ -14,6 +14,11 @@ export interface MenuItem {
   rating?: number;
 }
 
+export interface OrderCartItem {
+  item: MenuItem;
+  quantity: number;
+}
+
 // Fix: Add missing CarouselItem interface for use in Carousel.tsx
 export interface CarouselItem {
   id: number;
@@ -22,4 +27,4 @@ export interface CarouselItem {
   imageUrl: string;
 }
 
-export type Page = 'home' | 'doces' | 'salgadas' | 'bebidas';
+export type Page = 'home' | 'doces' | 'salgadas' | 'bebidas' | 'pedido';

@@ -10,9 +10,10 @@ const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 interface ProductDetailModalProps {
   item: MenuItem;
   onClose: () => void;
+  onOrder?: (item: MenuItem) => void;
 }
 
-const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose }) => {
+const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose, onOrder }) => {
   const [activeImage, setActiveImage] = useState<ImageInfo | undefined>(
     item.images.find(img => img.isMain) || item.images[0]
   );
@@ -85,17 +86,33 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ item, onClose }
           <h3 id="product-title" className="text-4xl font-bold text-orange-900 mb-6 font-ubuntu leading-tight">{item.name}</h3>
           <p className="text-gray-700 text-lg mb-8 leading-relaxed border-l-4 border-orange-200 pl-4">{item.description}</p>
           
-          <div className="mt-auto flex items-end justify-between">
+          <div className="mt-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-4 border-t border-orange-100">
             <div className="flex flex-col">
-                <span className="text-gray-400 text-sm">Preço</span>
-                <p className="text-4xl font-black text-orange-700">{item.price}</p>
+                <span className="text-gray-400 text-xs uppercase tracking-wider">Preço</span>
+                <p className="text-3xl sm:text-4xl font-black text-orange-700">{item.price}</p>
             </div>
-            <button 
-                onClick={onClose}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-orange-200"
-            >
-                Fechar
-            </button>
+            <div className="flex items-center gap-3">
+              <button 
+                  onClick={onClose}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold transition-all text-sm"
+              >
+                  Fechar
+              </button>
+              {onOrder && (
+                <button 
+                    onClick={() => {
+                      onOrder(item);
+                      onClose();
+                    }}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-orange-200 text-sm flex items-center gap-2 hover:scale-105"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    Fazer Pedido
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -15,7 +15,11 @@ const subtitles = [
     "Há mais de 20 anos presenteando sabores!"
 ];
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  onOpenOrder?: () => void;
+}
+
+const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentSubtitleIndex, setCurrentSubtitleIndex] = useState(0);
 
@@ -61,20 +65,34 @@ const Hero: React.FC = () => {
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent z-0"></div>
 
-            <div className="relative z-10 text-center p-4">
-                <h1 className="font-story-script text-6xl md:text-8xl mb-4 text-shadow-strong">
-                    Tapiocaria Delegusty
+            <div className="relative z-10 text-center p-4 max-w-4xl mx-auto">
+                <h1 className="font-kievit-serif font-bold text-5xl sm:text-7xl md:text-8xl mb-4 text-shadow-strong tracking-tight">
+                    Tapioca Delegusty
                 </h1>
                 <p key={currentSubtitleIndex} className="text-xl md:text-2xl max-w-2xl mx-auto mb-8 text-shadow-strong font-light animate-fade-in-up">
                     {subtitles[currentSubtitleIndex]}
                 </p>
-                <a
-                    href="#menu"
-                    onClick={handleScrollToMenu}
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                    Ver Cardápio
-                </a>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                    <a
+                        href="#menu"
+                        onClick={handleScrollToMenu}
+                        className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-8 rounded-full text-base sm:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                    >
+                        Ver Cardápio
+                    </a>
+                    {onOpenOrder && (
+                        <button
+                            type="button"
+                            onClick={onOpenOrder}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full text-base sm:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                            </svg>
+                            Faça seu Pedido
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-3 z-10">

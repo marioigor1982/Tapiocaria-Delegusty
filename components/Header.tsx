@@ -26,9 +26,10 @@ interface HeaderProps {
     onNavigate: (page: Page, anchor?: string) => void;
     allItems: MenuItem[];
     onSearchResultSelect: (item: MenuItem) => void;
+    onOpenOrder?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSelect }) => {
+const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSelect, onOpenOrder }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -241,6 +242,18 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                 )
                             ))}
                             {searchComponent()}
+                            {onOpenOrder && (
+                                <button
+                                    onClick={onOpenOrder}
+                                    className="flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm bg-green-600 hover:bg-green-700 text-white transition-all shadow-md hover:scale-105"
+                                    title="Faça seu Pedido para Retirada no Balcão"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                    </svg>
+                                    <span>Faça seu Pedido</span>
+                                </button>
+                            )}
                             <a
                                 href="https://www.instagram.com/delegusty.tapioca?igsh=YjZld3hheDN2eGMz"
                                 target="_blank"
@@ -253,7 +266,18 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                         </nav>
 
                         {/* Mobile Menu Button */}
-                        <div className="lg:hidden">
+                        <div className="lg:hidden flex items-center gap-2">
+                            {onOpenOrder && (
+                                <button
+                                    onClick={onOpenOrder}
+                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs bg-green-600 text-white shadow-md"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                    </svg>
+                                    <span>Pedir</span>
+                                </button>
+                            )}
                             <button onClick={toggleMenu} aria-label="Toggle menu" className={`relative z-50 transition-colors duration-300 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
                                 {isMenuOpen ? <CloseIcon className="w-7 h-7" /> : <MenuIcon className="w-7 h-7" />}
                             </button>
@@ -265,12 +289,26 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                 <div className={`lg:hidden fixed inset-0 bg-orange-50 z-30 transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out`}>
                     <div className="flex flex-col h-full pt-24 p-8">
                         {searchComponent(true)}
-                        <nav className="flex flex-col items-center justify-center h-full space-y-8 mt-4">
+                        <nav className="flex flex-col items-center justify-center h-full space-y-6 mt-4">
                             {navLinks.map((link) => (
-                                <a key={link.href} href={link.href} className="text-3xl font-semibold text-orange-900 hover:text-orange-600" onClick={(e) => handleLinkClick(e, link.href)}>
+                                <a key={link.href} href={link.href} className="text-2xl font-semibold text-orange-900 hover:text-orange-600" onClick={(e) => handleLinkClick(e, link.href)}>
                                     {link.label}
                                 </a>
                             ))}
+                            {onOpenOrder && (
+                                <button
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        onOpenOrder();
+                                    }}
+                                    className="flex items-center gap-2 px-6 py-3 rounded-full text-lg font-bold text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                    </svg>
+                                    <span>Faça seu Pedido</span>
+                                </button>
+                            )}
                             <a
                                 href="https://www.instagram.com/delegusty.tapioca?igsh=YjZld3hheDN2eGMz"
                                 target="_blank"
