@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Header from './components/Header';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import FloatingIFood from './components/FloatingIFood';
-import OrderModal from './components/OrderModal';
+import OrderPage from './components/OrderPage';
 import Footer from './components/Footer';
 import HomePage from './components/HomePage';
 import MenuPage from './components/MenuPage';
@@ -22,7 +22,6 @@ const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [targetAnchor, setTargetAnchor] = useState<string | null>(null);
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
   const [preselectedOrderItemId, setPreselectedOrderItemId] = useState<number | undefined>(undefined);
 
   // Memoize all items with their category for URL lookups and ordering
@@ -39,7 +38,10 @@ const App: React.FC = () => {
     const category = path[0] as Page;
     const productSlug = path[1];
 
-    if (category && ['doces', 'salgadas', 'bebidas'].includes(category)) {
+    if (category === 'pedido') {
+      setCurrentPage('pedido');
+      setSelectedItem(null);
+    } else if (category && ['doces', 'salgadas', 'bebidas'].includes(category)) {
       setCurrentPage(category);
       if (productSlug) {
         const item = allItems.find(i => slugify(i.name) === productSlug && i.category === category);
@@ -92,7 +94,7 @@ const App: React.FC = () => {
           element.scrollIntoView({ behavior: 'smooth' });
         }
       }, 100);
-    } else if (!anchor) {
+    } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -121,12 +123,10 @@ const App: React.FC = () => {
     } else {
       setPreselectedOrderItemId(undefined);
     }
-    setIsOrderModalOpen(true);
-  };
-
-  const handleCloseOrder = () => {
-    setIsOrderModalOpen(false);
-    setPreselectedOrderItemId(undefined);
+    setCurrentPage('pedido');
+    setSelectedItem(null);
+    updateUrl('pedido');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goHome = () => handleNavigation('home');
@@ -144,6 +144,13 @@ const App: React.FC = () => {
           <HomePage 
             onNavigate={(category) => handleNavigation(category)} 
             onOpenOrder={() => handleOpenOrder()}
+          />
+        )}
+        {currentPage === 'pedido' && (
+          <OrderPage 
+            allItems={allItems} 
+            onBack={goHome} 
+            initialItemId={preselectedOrderItemId}
           />
         )}
         {currentPage === 'salgadas' && <MenuPage 
@@ -186,14 +193,6 @@ const App: React.FC = () => {
           item={selectedItem} 
           onClose={handleCloseModal}
           onOrder={(item) => handleOpenOrder(item)}
-        />
-      )}
-
-      {isOrderModalOpen && (
-        <OrderModal 
-          allItems={allItems}
-          initialItemId={preselectedOrderItemId}
-          onClose={handleCloseOrder}
         />
       )}
     </div>
