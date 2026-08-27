@@ -135,7 +135,7 @@ const App: React.FC = () => {
                                         items={SWEET_TAPIOCAS} 
                                         onBack={goHome} 
                                         onSelectItem={handleShowItemDetails}
-                                        backgroundImage="https://www.frimesa.com.br/upload/image/recipe/recipe_05_img2_tapioca-de-doce-de-leite.jpg"
+                                        backgroundImage="https://i.imgur.com/elLtY0I.jpg"
                                         targetAnchor={targetAnchor}
                                     />}
         {currentPage === 'bebidas' && <MenuPage 

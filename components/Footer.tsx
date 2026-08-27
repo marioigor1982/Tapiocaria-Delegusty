@@ -89,8 +89,8 @@ const Footer: React.FC = () => {
               >
                 <InstagramIcon className="w-5 h-5" />
               </a>
-               <a
-                href="https://wa.me/5511981672635"
+              <a
+                href="https://wa.me/5511922099496"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center bg-green-500 text-white rounded-full transition-colors hover:bg-green-400"
@@ -100,7 +100,27 @@ const Footer: React.FC = () => {
                 <WhatsAppIcon className="w-5 h-5" />
               </a>
               <a
-                href="https://drive.google.com/file/d/1xHKWC-VQ0GCZFWyXzZ7BccN3y_14EsEV/view?usp=sharing"
+                href="https://l.instagram.com/?u=https%3A%2F%2Fwww.ifood.com.br%2Fdelivery%2Fsao-paulo-sp%2Ftapiocas-delegusty-conjunto-habitacional-instituto-adventista%2Fa23a8762-6b06-4ee3-85b0-94ab21a38799%3FUTM_Medium%3Dshare%26utm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAcGRvZgJleHRuA2FlbQIxMQBzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAaejiVzJfhyXAurgwAY-OWq5EHXUtyU_RIzqr1ThGRb3G3p6QMmBg6oqxQeSUA_aem_PdbaCsABhN-1hzKglCfMwg&e=AUDH0D5aFinRf5FUvptO_hJt1x2HkDPwvWBgPL1JIyzmtfaIj1H9Zz0nqPlT8FP9oCYtsOzZc6j2scvYJx_fiumO_uly49d398Y6kjud1fUvy1vr_K_IzxSofshVikhz8CZhAA4"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center bg-red-600 text-white rounded-full transition-colors hover:bg-red-500 p-1.5 overflow-hidden shadow-sm"
+                aria-label="iFood"
+                title="Peça no iFood"
+              >
+                <img 
+                  src="https://i.imgur.com/TWzAuzB.png" 
+                  alt="iFood" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('.jpg')) {
+                      target.src = 'https://i.imgur.com/TWzAuzB.jpg';
+                    }
+                  }}
+                />
+              </a>
+              <a
+                href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view?usp=drive_link"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center bg-stone-600 text-white rounded-full transition-colors hover:bg-stone-500"
@@ -124,7 +144,7 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-start">
                 <WhatsAppIcon className="w-5 h-5 mr-3 mt-0.5 text-orange-400 flex-shrink-0" />
-                <a href="https://wa.me/5511981672635" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition-colors">(11) 98167-2635</a>
+                <a href="https://wa.me/5511922099496" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition-colors">(11) 92209-9496</a>
               </li>
               <li className="flex items-start">
                 <EnvelopeIcon className="w-5 h-5 mr-3 mt-0.5 text-orange-400 flex-shrink-0" />
