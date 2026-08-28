@@ -235,13 +235,13 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
                 <img 
-                  src="https://i.imgur.com/YQ6qvQg.png" 
+                  src="https://i.imgur.com/g4cIv92.png" 
                   alt="iFood" 
                   className="w-full h-full object-cover rounded-full" 
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('YQ6qvQg.jpg')) {
-                      target.src = 'https://i.imgur.com/YQ6qvQg.jpg';
+                    if (!target.src.includes('g4cIv92.jpg')) {
+                      target.src = 'https://i.imgur.com/g4cIv92.jpg';
                     }
                   }} 
                 />

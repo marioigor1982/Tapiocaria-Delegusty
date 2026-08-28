@@ -286,7 +286,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
             className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm"
             title="Deseja entrega em domicílio? Peça no iFood"
           >
-            <img src="https://i.imgur.com/YQ6qvQg.png" alt="iFood" className="w-5 h-5 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+            <img src="https://i.imgur.com/g4cIv92.png" alt="iFood" className="w-5 h-5 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
             <span>Precisa de Entrega? Peça pelo iFood</span>
           </a>
         </div>
