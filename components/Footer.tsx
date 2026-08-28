@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { InstagramIcon } from './icons/InstagramIcon';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
-import { ChefHatIcon } from './icons/ChefHatIcon';
 
 const MapPinIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -83,11 +81,21 @@ const Footer: React.FC = () => {
                 href="https://www.instagram.com/delegusty.tapioca?igsh=YjZld3hheDN2eGMz"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-orange-600 text-white rounded-full transition-all hover:bg-orange-500 hover:scale-105 shadow-sm"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
                 aria-label="Instagram"
                 title="Siga-nos no Instagram"
               >
-                <InstagramIcon className="w-5 h-5" />
+                <img 
+                  src="https://i.imgur.com/be7fgn4.png" 
+                  alt="Instagram" 
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('be7fgn4.jpg')) {
+                      target.src = 'https://i.imgur.com/be7fgn4.jpg';
+                    }
+                  }}
+                />
               </a>
               <a
                 href="https://wa.me/5511922099496"
@@ -103,19 +111,18 @@ const Footer: React.FC = () => {
                 href="https://www.tiktok.com/@delegusty.tapioca?_r=1&_t=ZS-99DdqnwOdLY"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full transition-all hover:bg-neutral-800 hover:scale-105 p-2 shadow-sm border border-stone-700"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
                 aria-label="TikTok"
                 title="Siga-nos no TikTok"
               >
                 <img 
-                  src="https://img.icons8.com/?size=100&id=118640&format=png&color=ffffff" 
+                  src="https://i.imgur.com/ZgohbzB.png" 
                   alt="TikTok" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover rounded-full"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('color=000000')) {
-                      target.src = 'https://img.icons8.com/?size=100&id=118640&format=png&color=000000';
-                      target.className = 'w-full h-full object-contain invert';
+                    if (!target.src.includes('ZgohbzB.jpg')) {
+                      target.src = 'https://i.imgur.com/ZgohbzB.jpg';
                     }
                   }}
                 />
@@ -144,11 +151,21 @@ const Footer: React.FC = () => {
                 href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view?usp=drive_link"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 flex items-center justify-center bg-stone-600 text-white rounded-full transition-all hover:bg-stone-500 hover:scale-105 shadow-sm"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
                 aria-label="Baixe nosso cardápio"
                 title="Baixe nosso cardápio"
               >
-                <ChefHatIcon className="w-6 h-6" />
+                <img 
+                  src="https://i.imgur.com/FE9tRku.png" 
+                  alt="Baixe nosso cardápio" 
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('FE9tRku.jpg')) {
+                      target.src = 'https://i.imgur.com/FE9tRku.jpg';
+                    }
+                  }}
+                />
               </a>
             </div>
           </div>
