@@ -148,7 +148,8 @@ const Footer: React.FC = () => {
                 />
               </a>
               <a
-                href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view"
+                href="/cardapio-delegusty.pdf"
+                download="Cardapio-Tapioca-Delegusty.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
