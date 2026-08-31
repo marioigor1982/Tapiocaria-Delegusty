@@ -2,7 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { MenuItem } from '../types';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { PrinterIcon } from './icons/PrinterIcon';
 import ProductDetailModal from './ProductDetailModal';
+import ThermalReceiptModal from './ThermalReceiptModal';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -66,6 +68,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [customerName, setCustomerName] = useState('');
   const [observations, setObservations] = useState('');
   const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
@@ -525,7 +528,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
               )}
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
               {selectedItemsList.length > 0 && (
                 <button
                   type="button"
@@ -535,6 +538,21 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                   Limpar
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(true)}
+                disabled={selectedItemsList.length === 0}
+                className={`px-4 py-3.5 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border shadow-md transition-all ${
+                  selectedItemsList.length > 0
+                    ? 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800 hover:scale-[1.02] cursor-pointer'
+                    : 'bg-stone-200 text-stone-400 border-stone-200 cursor-not-allowed opacity-70'
+                }`}
+                title="Imprimir cupom de pedido térmico 80mm ou salvar em PDF"
+              >
+                <PrinterIcon className="w-5 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Imprimir Cupom (80mm)</span>
+                <span className="sm:hidden">Imprimir</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setShowSummaryDrawer(true)}
@@ -635,10 +653,21 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 <button
                   type="button"
                   onClick={handleSendWhatsApp}
-                  className="w-full py-3.5 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:shadow-green-300 transition-all text-base"
+                  className="w-full py-3.5 px-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg hover:shadow-green-300 transition-all text-base cursor-pointer"
                 >
                   <WhatsAppIcon className="w-6 h-6 flex-shrink-0" />
                   <span>Enviar para WhatsApp da Loja</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSummaryDrawer(false);
+                    setShowPrintModal(true);
+                  }}
+                  className="w-full py-3 px-4 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all text-sm cursor-pointer"
+                >
+                  <PrinterIcon className="w-5 h-5 flex-shrink-0 text-orange-400" />
+                  <span>Imprimir Cupom Térmico (80mm) / Salvar PDF</span>
                 </button>
                 <button
                   type="button"
@@ -660,6 +689,17 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             onClose={() => setSelectedDetailItem(null)}
           />
         )}
+
+        {/* Thermal Receipt Print Modal (80mm / PDF) */}
+        <ThermalReceiptModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          items={selectedItemsList}
+          customerName={customerName}
+          observations={observations}
+          totalPrice={totalPrice}
+          totalItemCount={totalItemCount}
+        />
       </div>
     </div>
   );

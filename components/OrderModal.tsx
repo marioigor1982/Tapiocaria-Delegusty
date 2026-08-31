@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import type { MenuItem } from '../types';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { SearchIcon } from './icons/SearchIcon';
+import { PrinterIcon } from './icons/PrinterIcon';
+import ThermalReceiptModal from './ThermalReceiptModal';
 
 const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -95,6 +97,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const [customerName, setCustomerName] = useState('');
   const [observations, setObservations] = useState('');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // If initial item changes, add it
   React.useEffect(() => {
@@ -568,25 +571,54 @@ const OrderModal: React.FC<OrderModalProps> = ({
               </div>
 
               {/* WhatsApp Button */}
-              <button
-                type="button"
-                onClick={handleSendWhatsApp}
-                disabled={selectedItemsList.length === 0}
-                className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg transition-all transform ${
-                  selectedItemsList.length > 0
-                    ? 'bg-green-600 hover:bg-green-700 hover:scale-[1.02] shadow-green-200 cursor-pointer'
-                    : 'bg-gray-300 cursor-not-allowed opacity-70'
-                }`}
-              >
-                <WhatsAppIcon className="w-6 h-6 flex-shrink-0" />
-                <span>Enviar Pedido pelo WhatsApp</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleSendWhatsApp}
+                  disabled={selectedItemsList.length === 0}
+                  className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg transition-all transform ${
+                    selectedItemsList.length > 0
+                      ? 'bg-green-600 hover:bg-green-700 hover:scale-[1.02] shadow-green-200 cursor-pointer'
+                      : 'bg-gray-300 cursor-not-allowed opacity-70'
+                  }`}
+                >
+                  <WhatsAppIcon className="w-6 h-6 flex-shrink-0" />
+                  <span>Enviar Pedido pelo WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPrintModal(true)}
+                  disabled={selectedItemsList.length === 0}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-sm transition-all border ${
+                    selectedItemsList.length > 0
+                      ? 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800 shadow-md cursor-pointer'
+                      : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
+                  }`}
+                  title="Imprimir cupom de pedido térmico 80mm ou salvar em PDF"
+                >
+                  <PrinterIcon className="w-4 h-4 flex-shrink-0 text-orange-400" />
+                  <span>Imprimir Cupom (80mm / PDF)</span>
+                </button>
+              </div>
               <p className="text-[11px] text-gray-400 text-center mt-2 leading-tight">
                 Será aberta uma mensagem com o cumprimento adequado ao horário e todos os itens do seu pedido.
               </p>
             </div>
           </div>
         </div>
+
+        {/* Thermal Receipt Print Modal (80mm / PDF) */}
+        <ThermalReceiptModal
+          isOpen={showPrintModal}
+          onClose={() => setShowPrintModal(false)}
+          items={selectedItemsList}
+          customerName={customerName}
+          observations={observations}
+          totalPrice={totalPrice}
+          totalItemCount={totalItemCount}
+        />
+      </div>
       </div>
 
       <style>{`
