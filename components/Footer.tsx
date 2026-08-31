@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
         
         let isOpenNow = false;
 
-        if (day !== 'Sunday' && hour >= 17 && hour <= 23) {
+        if (day !== 'Sunday' && hour >= 18 && hour <= 23) {
            isOpenNow = true;
         }
 
@@ -148,7 +148,7 @@ const Footer: React.FC = () => {
                 />
               </a>
               <a
-                href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view?usp=drive_link"
+                href="https://drive.google.com/file/d/1JcHcnrXXhtvRm_ckLLgjgaBmCWYt_srY/view"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm"
@@ -202,7 +202,7 @@ const Footer: React.FC = () => {
             <div className="text-sm">
                 <div className="flex justify-between items-center border-b border-stone-700 py-3">
                     <span>Segunda à Sábado</span>
-                    <span className="text-white">17h - 00h</span>
+                    <span className="text-white">18h - 23:59h</span>
                 </div>
                  <div className="flex justify-between items-center border-b border-stone-700 py-3">
                     <span>Domingo</span>
