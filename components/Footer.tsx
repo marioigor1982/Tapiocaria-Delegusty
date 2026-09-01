@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { WhatsAppIcon } from './icons/WhatsAppIcon';
+import { useStoreStatus } from '../hooks/useStoreStatus';
 
 const MapPinIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -16,51 +17,7 @@ const EnvelopeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 
 const Footer: React.FC = () => {
-  const [status, setStatus] = useState({ isOpen: false, text: 'Verificando...' });
-
-  useEffect(() => {
-    const checkStatus = () => {
-      try {
-        const parts = new Intl.DateTimeFormat('en-US', {
-          timeZone: 'America/Sao_Paulo',
-          weekday: 'long',
-          hour: 'numeric',
-          hour12: false,
-        }).formatToParts(new Date());
-
-        const dayPart = parts.find((p) => p.type === 'weekday')?.value;
-        const hourPart = parts.find((p) => p.type === 'hour')?.value;
-
-        if (!dayPart || !hourPart) {
-          setStatus({ isOpen: false, text: 'Fechado' });
-          return;
-        }
-        
-        const day = dayPart;
-        const hour = parseInt(hourPart, 10);
-        
-        let isOpenNow = false;
-
-        if (day !== 'Sunday' && hour >= 18 && hour <= 23) {
-           isOpenNow = true;
-        }
-
-        setStatus({ 
-            isOpen: isOpenNow, 
-            text: isOpenNow ? 'Aberto' : 'Fechado' 
-        });
-
-      } catch (error) {
-        console.error("Error checking time status:", error);
-        setStatus({ isOpen: false, text: 'Fechado' });
-      }
-    };
-
-    checkStatus();
-    const intervalId = setInterval(checkStatus, 60000); // Re-check every minute
-
-    return () => clearInterval(intervalId);
-  }, []);
+  const storeStatus = useStoreStatus();
 
   return (
     <footer id="contato" className="bg-stone-800 text-stone-300">
@@ -212,9 +169,9 @@ const Footer: React.FC = () => {
                 <div className="flex justify-between items-center pt-4 mt-2">
                     <span>Status</span>
                     <div className="flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full ${status.isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
-                        <span className={`font-semibold text-base ${status.isOpen ? 'text-green-400' : 'text-red-500'}`}>
-                            {status.text}
+                        <span className={`w-3 h-3 rounded-full ${storeStatus.isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></span>
+                        <span className={`font-semibold text-base ${storeStatus.isOpen ? 'text-green-400' : 'text-red-500'}`}>
+                            {storeStatus.statusText}
                         </span>
                     </div>
                 </div>

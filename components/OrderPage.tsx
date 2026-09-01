@@ -5,6 +5,7 @@ import { SearchIcon } from './icons/SearchIcon';
 import { PrinterIcon } from './icons/PrinterIcon';
 import ProductDetailModal from './ProductDetailModal';
 import ThermalReceiptModal from './ThermalReceiptModal';
+import { useStoreStatus } from '../hooks/useStoreStatus';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -55,6 +56,7 @@ export const getTimeGreeting = (): string => {
 };
 
 const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }) => {
+  const storeStatus = useStoreStatus();
   // Map of itemId -> quantity
   const [quantities, setQuantities] = useState<Record<number, number>>(() => {
     if (initialItemId) {
@@ -198,16 +200,24 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
         </div>
 
         {/* Hero Title & Description */}
-        <div className="bg-gradient-to-r from-orange-700 via-orange-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-orange-700 via-orange-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-6 relative overflow-hidden">
           <div className="relative z-10 max-w-3xl">
             <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">
-              Simulação & Pedido Rápido
+              {storeStatus.isOpen ? 'Simulação & Pedido Rápido' : 'Consulta do Cardápio'}
             </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-ubuntu mb-3 tracking-tight">
               Faça seu Pedido
             </h1>
             <p className="text-orange-100 text-sm sm:text-base leading-relaxed">
-              Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. O total é calculado automaticamente e você envia direto para nosso WhatsApp!
+              {storeStatus.isOpen ? (
+                <>
+                  Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. O total é calculado automaticamente e você envia direto para nosso WhatsApp!
+                </>
+              ) : (
+                <>
+                  Consulte todos os nossos sabores, fotos, ingredientes e preços abaixo. A opção de realizar pedidos é liberada automaticamente no nosso horário de funcionamento (<strong>Seg à Sáb das 18h às 23:59h</strong>).
+                </>
+              )}
             </p>
           </div>
 
@@ -217,6 +227,41 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </svg>
           </div>
         </div>
+
+        {/* Closed store hours notice banner */}
+        {!storeStatus.isOpen && (
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 sm:p-6 mb-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 text-2xl shadow-sm">
+                ⏰
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700 font-black text-xs">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    Loja Fechada no Momento para Pedidos
+                  </span>
+                  <span className="text-xs text-amber-900 font-bold">
+                    Horário: Seg à Sáb das 18h às 23:59h (Domingo Fechado)
+                  </span>
+                </div>
+                <p className="text-sm text-stone-700 mt-1.5 leading-relaxed">
+                  A emissão e envio de pedidos ficam liberados durante nosso horário de atendimento. <strong>Você pode navegar e visualizar os detalhes, fotos e ingredientes de todos os produtos normalmente!</strong>
+                </p>
+                <p className="text-xs text-amber-900 font-bold mt-1">
+                  📅 {storeStatus.nextOpenText}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onBack}
+              className="self-stretch md:self-auto px-5 py-3 rounded-2xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
+            >
+              <span>Ver Cardápio Principal</span>
+            </button>
+          </div>
+        )}
 
         {/* Notice Info Box: Retirada vs iFood */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -441,57 +486,68 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     </div>
                   </div>
 
-                  {/* Right block: Price + Subtotal + Quantity Stepper */}
+                  {/* Right block: Price + Subtotal + Actions */}
                   <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto pt-2.5 sm:pt-0 border-t border-stone-100 sm:border-t-0 flex-shrink-0">
                     <div className="flex flex-col items-start sm:items-end">
                       <span className="text-base sm:text-lg font-black text-orange-700">
                         {item.price}
                       </span>
-                      {qty > 0 && (
+                      {storeStatus.isOpen && qty > 0 && (
                         <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200 whitespace-nowrap mt-0.5">
                           Subtotal: {formatPrice(subtotal)}
                         </span>
                       )}
                     </div>
 
-                    {/* Quantity Stepper */}
-                    <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner flex-shrink-0">
+                    {storeStatus.isOpen ? (
+                      /* Quantity Stepper when Open */
+                      <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(item.id, qty - 1)}
+                          disabled={qty <= 0}
+                          className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all ${
+                            qty > 0
+                              ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm active:scale-95 cursor-pointer'
+                              : 'text-stone-300 cursor-not-allowed'
+                          }`}
+                          aria-label="Diminuir quantidade"
+                        >
+                          -
+                        </button>
+
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={qty === 0 ? '' : qty}
+                          placeholder="0"
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            handleQuantityChange(item.id, isNaN(val) ? 0 : val);
+                          }}
+                          className="w-10 text-center font-black text-base bg-transparent focus:outline-none focus:bg-white focus:rounded-md py-1 text-stone-900"
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => handleQuantityChange(item.id, qty + 1)}
+                          className="w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                          aria-label="Adicionar quantidade"
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      /* Detailed view button when store is closed */
                       <button
                         type="button"
-                        onClick={() => handleQuantityChange(item.id, qty - 1)}
-                        disabled={qty <= 0}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl transition-all ${
-                          qty > 0
-                            ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm active:scale-95'
-                            : 'text-stone-300 cursor-not-allowed'
-                        }`}
-                        aria-label="Diminuir quantidade"
+                        onClick={() => setSelectedDetailItem(item)}
+                        className="px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 border border-orange-200 shadow-sm transition-all hover:scale-105 cursor-pointer"
                       >
-                        -
+                        <span>🔍 Ver Detalhes</span>
                       </button>
-
-                      <input
-                        type="number"
-                        min="0"
-                        max="99"
-                        value={qty === 0 ? '' : qty}
-                        placeholder="0"
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          handleQuantityChange(item.id, isNaN(val) ? 0 : val);
-                        }}
-                        className="w-10 text-center font-black text-base bg-transparent focus:outline-none focus:bg-white focus:rounded-md py-1 text-stone-900"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={() => handleQuantityChange(item.id, qty + 1)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg font-bold text-xl bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105 active:scale-95"
-                        aria-label="Adicionar quantidade"
-                      >
-                        +
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               );
@@ -499,74 +555,106 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           )}
         </div>
 
-        {/* Sticky Floating Bottom Bar for Checkout */}
+        {/* Sticky Floating Bottom Bar */}
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-stone-200 p-4 shadow-2xl">
-          <div className="container mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-orange-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md">
-                  {totalItemCount}
+          <div className="container mx-auto max-w-6xl">
+            {storeStatus.isOpen ? (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-orange-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md">
+                      {totalItemCount}
+                    </div>
+                    <div>
+                      <div className="text-xs text-stone-500 uppercase tracking-wider font-semibold">
+                        {totalItemCount === 1 ? '1 item selecionado' : `${totalItemCount} itens selecionados`}
+                      </div>
+                      <div className="text-xl sm:text-2xl font-black text-stone-900">
+                        Total: <span className="text-orange-700">{formatPrice(totalPrice)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedItemsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSummaryDrawer(true)}
+                      className="sm:hidden text-xs font-bold text-orange-700 underline"
+                    >
+                      Ver Resumo
+                    </button>
+                  )}
                 </div>
-                <div>
-                  <div className="text-xs text-stone-500 uppercase tracking-wider font-semibold">
-                    {totalItemCount === 1 ? '1 item selecionado' : `${totalItemCount} itens selecionados`}
-                  </div>
-                  <div className="text-xl sm:text-2xl font-black text-stone-900">
-                    Total: <span className="text-orange-700">{formatPrice(totalPrice)}</span>
-                  </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                  {selectedItemsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      className="hidden sm:inline-flex px-3 py-3 text-xs font-bold text-stone-500 hover:text-red-600 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(true)}
+                    disabled={selectedItemsList.length === 0}
+                    className={`px-4 py-3.5 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border shadow-md transition-all ${
+                      selectedItemsList.length > 0
+                        ? 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800 hover:scale-[1.02] cursor-pointer'
+                        : 'bg-stone-200 text-stone-400 border-stone-200 cursor-not-allowed opacity-70'
+                    }`}
+                    title="Imprimir cupom de pedido térmico 80mm ou salvar em PDF"
+                  >
+                    <PrinterIcon className="w-5 h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Imprimir Cupom (80mm)</span>
+                    <span className="sm:hidden">Imprimir</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSummaryDrawer(true)}
+                    disabled={selectedItemsList.length === 0}
+                    className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 text-white shadow-xl transition-all ${
+                      selectedItemsList.length > 0
+                        ? 'bg-green-600 hover:bg-green-700 hover:scale-[1.02] shadow-green-300 cursor-pointer'
+                        : 'bg-stone-300 cursor-not-allowed opacity-70'
+                    }`}
+                  >
+                    <WhatsAppIcon className="w-5 h-5 flex-shrink-0" />
+                    <span>Finalizar Pedido via WhatsApp</span>
+                  </button>
                 </div>
               </div>
+            ) : (
+              /* Bottom Bar when closed */
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <div className="w-10 h-10 rounded-xl bg-stone-800 text-white flex items-center justify-center font-bold flex-shrink-0">
+                    <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                      <span>Loja Fechada para Pedidos</span>
+                      <span className="text-xs font-normal text-stone-500">(18h às 23:59h)</span>
+                    </div>
+                    <div className="text-xs text-stone-600 font-medium">
+                      {storeStatus.nextOpenText} • Seg a Sáb
+                    </div>
+                  </div>
+                </div>
 
-              {selectedItemsList.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowSummaryDrawer(true)}
-                  className="sm:hidden text-xs font-bold text-orange-700 underline"
-                >
-                  Ver Resumo
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-              {selectedItemsList.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleClearAll}
-                  className="hidden sm:inline-flex px-3 py-3 text-xs font-bold text-stone-500 hover:text-red-600 rounded-xl transition-colors"
-                >
-                  Limpar
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setShowPrintModal(true)}
-                disabled={selectedItemsList.length === 0}
-                className={`px-4 py-3.5 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 border shadow-md transition-all ${
-                  selectedItemsList.length > 0
-                    ? 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800 hover:scale-[1.02] cursor-pointer'
-                    : 'bg-stone-200 text-stone-400 border-stone-200 cursor-not-allowed opacity-70'
-                }`}
-                title="Imprimir cupom de pedido térmico 80mm ou salvar em PDF"
-              >
-                <PrinterIcon className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Imprimir Cupom (80mm)</span>
-                <span className="sm:hidden">Imprimir</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSummaryDrawer(true)}
-                disabled={selectedItemsList.length === 0}
-                className={`flex-1 sm:flex-initial px-6 py-3.5 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2.5 text-white shadow-xl transition-all ${
-                  selectedItemsList.length > 0
-                    ? 'bg-green-600 hover:bg-green-700 hover:scale-[1.02] shadow-green-300 cursor-pointer'
-                    : 'bg-stone-300 cursor-not-allowed opacity-70'
-                }`}
-              >
-                <WhatsAppIcon className="w-5 h-5 flex-shrink-0" />
-                <span>Finalizar Pedido via WhatsApp</span>
-              </button>
-            </div>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 text-white shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Voltar ao Início / Cardápio</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

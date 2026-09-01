@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useStoreStatus } from '../hooks/useStoreStatus';
 
 const images = [
     "https://i.pinimg.com/originals/01/86/6b/01866b9c1a1546c3d82b5d90dfcf2694.jpg",
@@ -20,6 +21,7 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
+    const storeStatus = useStoreStatus();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentSubtitleIndex, setCurrentSubtitleIndex] = useState(0);
 
@@ -84,12 +86,25 @@ const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
                         <button
                             type="button"
                             onClick={onOpenOrder}
-                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-full text-base sm:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                            className={`font-bold py-3 px-8 rounded-full text-base sm:text-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 cursor-pointer ${
+                                storeStatus.isOpen 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                    : 'bg-stone-900/80 hover:bg-stone-900 text-stone-100 border border-stone-600 backdrop-blur-sm'
+                            }`}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                            </svg>
-                            Faça seu Pedido
+                            {storeStatus.isOpen ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                </svg>
+                            ) : (
+                                <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                            )}
+                            <span>Faça seu Pedido</span>
+                            {!storeStatus.isOpen && (
+                                <span className="text-xs bg-stone-700/80 text-stone-300 px-2 py-0.5 rounded-full font-normal">
+                                    18h-23:59h
+                                </span>
+                            )}
                         </button>
                     )}
                 </div>

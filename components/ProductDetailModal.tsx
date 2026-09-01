@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { MenuItem, ImageInfo } from '../types';
+import { useStoreStatus } from '../hooks/useStoreStatus';
 
 const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -22,6 +23,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   currentQuantity,
   onQuantityChange 
 }) => {
+  const storeStatus = useStoreStatus();
   const [activeImage, setActiveImage] = useState<ImageInfo | undefined>(
     item.images.find(img => img.isMain) || item.images[0]
   );
@@ -101,38 +103,47 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <p className="text-3xl sm:text-4xl font-black text-orange-700">{item.price}</p>
             </div>
             
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               {onQuantityChange ? (
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner">
-                    <button
-                      type="button"
-                      onClick={() => onQuantityChange(item.id, qty - 1)}
-                      disabled={qty <= 0}
-                      className={`w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg transition-all ${
-                        qty > 0
-                          ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm'
-                          : 'text-stone-300 cursor-not-allowed'
-                      }`}
-                      aria-label="Diminuir quantidade"
-                    >
-                      -
-                    </button>
-                    <span className="w-10 text-center font-black text-base py-1 text-stone-900">
-                      {qty}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onQuantityChange(item.id, qty + 1)}
-                      className="w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105"
-                      aria-label="Adicionar quantidade"
-                    >
-                      +
-                    </button>
-                  </div>
+                  {storeStatus.isOpen ? (
+                    <div className="flex items-center bg-stone-100 rounded-xl p-1 border border-stone-300 shadow-inner">
+                      <button
+                        type="button"
+                        onClick={() => onQuantityChange(item.id, qty - 1)}
+                        disabled={qty <= 0}
+                        className={`w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg transition-all ${
+                          qty > 0
+                            ? 'bg-white text-stone-700 hover:bg-red-500 hover:text-white shadow-sm'
+                            : 'text-stone-300 cursor-not-allowed'
+                        }`}
+                        aria-label="Diminuir quantidade"
+                      >
+                        -
+                      </button>
+                      <span className="w-10 text-center font-black text-base py-1 text-stone-900">
+                        {qty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onQuantityChange(item.id, qty + 1)}
+                        className="w-9 h-9 flex items-center justify-center rounded-lg font-bold text-lg bg-green-600 text-white hover:bg-green-700 shadow-sm transition-all hover:scale-105"
+                        aria-label="Adicionar quantidade"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-right">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-600 font-bold text-xs">
+                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        Loja Fechada (18h - 23:59h)
+                      </span>
+                    </div>
+                  )}
                   <button 
                       onClick={onClose}
-                      className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-md text-sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-3 rounded-xl font-bold transition-all shadow-md text-sm cursor-pointer"
                   >
                       Concluído
                   </button>
@@ -141,23 +152,35 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <>
                   <button 
                       onClick={onClose}
-                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold transition-all text-sm"
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-3 rounded-xl font-semibold transition-all text-sm cursor-pointer"
                   >
                       Fechar
                   </button>
                   {onOrder && (
-                    <button 
-                        onClick={() => {
-                          onOrder(item);
-                          onClose();
-                        }}
-                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-orange-200 text-sm flex items-center gap-2 hover:scale-105"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                        </svg>
-                        Fazer Pedido
-                    </button>
+                    storeStatus.isOpen ? (
+                      <button 
+                          onClick={() => {
+                            onOrder(item);
+                            onClose();
+                          }}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-green-200 text-sm flex items-center gap-2 hover:scale-105 cursor-pointer"
+                      >
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                          </svg>
+                          Fazer Pedido
+                      </button>
+                    ) : (
+                      <div className="flex flex-col items-end">
+                        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-300 text-stone-700 font-bold text-xs sm:text-sm">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                          <span>Pedidos fechados agora</span>
+                        </div>
+                        <span className="text-[11px] text-stone-500 font-medium mt-1">
+                          {storeStatus.nextOpenText} • Seg a Sáb (18h - 23:59h)
+                        </span>
+                      </div>
+                    )
                   )}
                 </>
               )}

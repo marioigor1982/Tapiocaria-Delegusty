@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { InstagramIcon } from './icons/InstagramIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import type { Page, MenuItem } from '../types';
+import { useStoreStatus } from '../hooks/useStoreStatus';
 
 const MenuIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
@@ -30,6 +31,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSelect, onOpenOrder }) => {
+    const storeStatus = useStoreStatus();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -245,13 +247,26 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                             {onOpenOrder && (
                                 <button
                                     onClick={onOpenOrder}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm bg-green-600 hover:bg-green-700 text-white transition-all shadow-md hover:scale-105"
-                                    title="Faça seu Pedido para Retirada no Balcão"
+                                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all shadow-md hover:scale-105 cursor-pointer ${
+                                        storeStatus.isOpen
+                                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                                            : 'bg-stone-800/90 hover:bg-stone-900 text-stone-200 border border-stone-600'
+                                    }`}
+                                    title={storeStatus.isOpen ? "Faça seu Pedido para Retirada no Balcão" : `Loja Fechada no Momento (${storeStatus.shortHoursText})`}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                    </svg>
+                                    {storeStatus.isOpen ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                    )}
                                     <span>Faça seu Pedido</span>
+                                    {!storeStatus.isOpen && (
+                                        <span className="text-[10px] bg-stone-700 text-stone-300 px-1.5 py-0.2 rounded font-normal">
+                                            18h-23:59h
+                                        </span>
+                                    )}
                                 </button>
                             )}
                             <a
@@ -270,11 +285,19 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                             {onOpenOrder && (
                                 <button
                                     onClick={onOpenOrder}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs bg-green-600 text-white shadow-md"
+                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs shadow-md ${
+                                        storeStatus.isOpen
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-stone-800 text-stone-200 border border-stone-600'
+                                    }`}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                    </svg>
+                                    {storeStatus.isOpen ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                    )}
                                     <span>Pedir</span>
                                 </button>
                             )}
@@ -301,12 +324,25 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                         setIsMenuOpen(false);
                                         onOpenOrder();
                                     }}
-                                    className="flex items-center gap-2 px-6 py-3 rounded-full text-lg font-bold text-white bg-green-600 hover:bg-green-700 transition-colors shadow-lg"
+                                    className={`flex items-center gap-2 px-6 py-3 rounded-full text-lg font-bold shadow-lg transition-colors ${
+                                        storeStatus.isOpen
+                                            ? 'text-white bg-green-600 hover:bg-green-700'
+                                            : 'text-stone-200 bg-stone-800 hover:bg-stone-900 border border-stone-600'
+                                    }`}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                    </svg>
+                                    {storeStatus.isOpen ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                        </svg>
+                                    ) : (
+                                        <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                    )}
                                     <span>Faça seu Pedido</span>
+                                    {!storeStatus.isOpen && (
+                                        <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded-full font-normal">
+                                            18h-23:59h
+                                        </span>
+                                    )}
                                 </button>
                             )}
                             <a
