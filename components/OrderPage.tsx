@@ -239,10 +239,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700 font-black text-xs">
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    Loja Fechada no Momento para Pedidos
+                    Fechado no momento
                   </span>
                   <span className="text-xs text-amber-900 font-bold">
-                    Horário: Seg à Sáb das 18h às 23:59h (Domingo Fechado)
+                    Abre às 18 (Seg à Sáb das 18h às 23:59h)
                   </span>
                 </div>
                 <p className="text-sm text-stone-700 mt-1.5 leading-relaxed">
@@ -635,11 +635,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                   </div>
                   <div>
                     <div className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                      <span>Loja Fechada para Pedidos</span>
+                      <span>Fechado</span>
                       <span className="text-xs font-normal text-stone-500">(18h às 23:59h)</span>
                     </div>
                     <div className="text-xs text-stone-600 font-medium">
-                      {storeStatus.nextOpenText} • Seg a Sáb
+                      Abre às 18 • Seg a Sáb
                     </div>
                   </div>
                 </div>

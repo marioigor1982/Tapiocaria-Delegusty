@@ -27,15 +27,11 @@ export const getStoreStatus = (): StoreStatus => {
     const isWorkingDay = day !== 'Sunday';
     const isOpen = isWorkingDay && hour >= 18 && (hour < 24 || (hour === 23 && minute <= 59));
 
-    let nextOpenText = 'Abre às 18h';
+    let nextOpenText = 'Abre às 18';
     if (day === 'Sunday') {
-      nextOpenText = 'Abre amanhã (segunda-feira) às 18h';
-    } else if (day === 'Saturday' && hour >= 24) {
-      nextOpenText = 'Abre na segunda-feira às 18h';
-    } else if (hour < 18) {
-      nextOpenText = 'Abre hoje às 18h';
-    } else if (hour >= 24) {
-      nextOpenText = 'Abre hoje às 18h';
+      nextOpenText = 'Abre amanhã às 18';
+    } else {
+      nextOpenText = 'Abre às 18';
     }
 
     return {
@@ -52,7 +48,7 @@ export const getStoreStatus = (): StoreStatus => {
       statusText: 'Fechado',
       hoursText: 'Segunda à Sábado das 18h às 23:59h (Domingo fechado)',
       shortHoursText: 'Seg a Sáb: 18h - 23:59h',
-      nextOpenText: 'Abre às 18h',
+      nextOpenText: 'Abre às 18',
     };
   }
 };

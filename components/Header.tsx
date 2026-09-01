@@ -252,20 +252,23 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                             ? 'bg-green-600 hover:bg-green-700 text-white'
                                             : 'bg-stone-800/90 hover:bg-stone-900 text-stone-200 border border-stone-600'
                                     }`}
-                                    title={storeStatus.isOpen ? "Faça seu Pedido para Retirada no Balcão" : `Loja Fechada no Momento (${storeStatus.shortHoursText})`}
+                                    title={storeStatus.isOpen ? "Faça seu Pedido para Retirada no Balcão" : "Fechado • Abre às 18"}
                                 >
                                     {storeStatus.isOpen ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                            </svg>
+                                            <span>Faça seu Pedido</span>
+                                        </>
                                     ) : (
-                                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
-                                    )}
-                                    <span>Faça seu Pedido</span>
-                                    {!storeStatus.isOpen && (
-                                        <span className="text-[10px] bg-stone-700 text-stone-300 px-1.5 py-0.2 rounded font-normal">
-                                            18h-23:59h
-                                        </span>
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                            <span>Fechado</span>
+                                            <span className="text-[11px] bg-stone-700 text-stone-300 px-1.5 py-0.5 rounded font-normal">
+                                                Abre às 18
+                                            </span>
+                                        </>
                                     )}
                                 </button>
                             )}
@@ -285,20 +288,25 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                             {onOpenOrder && (
                                 <button
                                     onClick={onOpenOrder}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold text-xs shadow-md ${
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs shadow-md ${
                                         storeStatus.isOpen
                                             ? 'bg-green-600 text-white'
                                             : 'bg-stone-800 text-stone-200 border border-stone-600'
                                     }`}
                                 >
                                     {storeStatus.isOpen ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                            </svg>
+                                            <span>Pedir</span>
+                                        </>
                                     ) : (
-                                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                        <>
+                                            <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                                            <span>Fechado</span>
+                                        </>
                                     )}
-                                    <span>Pedir</span>
                                 </button>
                             )}
                             <button onClick={toggleMenu} aria-label="Toggle menu" className={`relative z-50 transition-colors duration-300 ${isScrolled ? 'text-gray-800' : 'text-white'}`}>
@@ -331,17 +339,20 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                     }`}
                                 >
                                     {storeStatus.isOpen ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                        </svg>
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25c-.67 0-1.19-.578-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                            </svg>
+                                            <span>Faça seu Pedido</span>
+                                        </>
                                     ) : (
-                                        <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
-                                    )}
-                                    <span>Faça seu Pedido</span>
-                                    {!storeStatus.isOpen && (
-                                        <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded-full font-normal">
-                                            18h-23:59h
-                                        </span>
+                                        <>
+                                            <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                            <span>Fechado</span>
+                                            <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded-full font-normal">
+                                                Abre às 18
+                                            </span>
+                                        </>
                                     )}
                                 </button>
                             )}
