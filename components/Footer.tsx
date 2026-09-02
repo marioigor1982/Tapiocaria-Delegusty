@@ -125,6 +125,50 @@ const Footer: React.FC = () => {
                   }}
                 />
               </a>
+              <a
+                href="https://g.page/r/CfmBj0aDwfF9EAE/review"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm bg-white"
+                aria-label="Avalie-nos no Google"
+                title="Avalie-nos no Google"
+              >
+                <img 
+                  src="https://i.imgur.com/9QpaFrV.png" 
+                  alt="Avalie-nos no Google" 
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('9QpaFrV.jpg')) {
+                      target.src = 'https://i.imgur.com/9QpaFrV.jpg';
+                    }
+                  }}
+                />
+              </a>
+            </div>
+
+            <div className="mt-4">
+              <a
+                href="https://g.page/r/CfmBj0aDwfF9EAE/review"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-stone-700/60 hover:bg-stone-700 text-stone-200 hover:text-white border border-stone-600/60 text-xs font-semibold transition-all hover:scale-[1.02] shadow-sm group"
+                title="Avalie-nos no Google"
+              >
+                <img 
+                  src="https://i.imgur.com/9QpaFrV.png" 
+                  alt="Google Review" 
+                  className="w-4 h-4 object-contain rounded-full bg-white flex-shrink-0"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (!target.src.includes('9QpaFrV.jpg')) {
+                      target.src = 'https://i.imgur.com/9QpaFrV.jpg';
+                    }
+                  }}
+                />
+                <span>Avalie-nos no Google</span>
+                <span className="text-amber-400 text-xs">★★★★★</span>
+              </a>
             </div>
           </div>
 
