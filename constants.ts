@@ -146,7 +146,7 @@ export const SALTY_TAPIOCAS: MenuItem[] = [
     id: 34,
     name: 'BRÓCOLIS',
     description: 'QUEIJO MINAS RALADO, BRÓCOLIS, REQUEIJÃO E ORÉGANO.',
-    images: [{ url: '/images/tapiocas/salgadas/tapioca-de-brocolis.jpg', isMain: true }],
+    images: [{ url: 'https://lh3.googleusercontent.com/8jUtyows2prYA_KS0nKrIh8P0Nvye0UG5CxF-2GdPjhRX9KIZa9qg5FOvE6XEMF8UD4NMPqgqQITTt9_kQ=w1351', isMain: true }],
     price: 'R$ 13,00',
   },
   {
