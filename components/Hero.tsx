@@ -7,6 +7,16 @@ const images = [
     "https://cdn.create.vista.com/api/media/small/207500020/stock-photo-tapioca-filled-hazelnuts-cream-fresh-strawberries",
     "https://img.freepik.com/fotos-premium/tapioca-recheada-com-tapioca-brasileira-de-frango_434193-1156.jpg?semt=ais_hybrid&w=740",
     "https://t3.ftcdn.net/jpg/05/46/01/62/360_F_546016297_G0pTcVLFOb5BkzqyDy7joxASlX3sorgz.jpg",
+    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWlhU4wODjBtbi6-0ArzoOaYnNZ62p1NBlAWO1F4AS4p9CgT0FbRUkSI3cNDOEemThoCkhSOyGoYgZy5XMPgs0tlG4uCbODPolzssAfEa-jITB5gOe75K5br8j4yErlkNmdli7bv42Jkt383=s680-w680-h510-rw",
+    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkwbC0QSP1OqYn725ZUAVrBMxZ-C06bTVmaiFwe8fHCYCdEFyv2z1EplTQqe9kyd7lIU3ufEvdt_bd7wdpklpOF3AEg1g9mItllOZG2GV6XKXqcUcE7nFMuyiQtI-nWDQJPLWz93fwAQqM=s680-w680-h510-rw",
+    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWnjGuVFGTCdCiWZP63d2ADQboUnItoqHe_DODQG6B1NLf-ekS5arqp7Tl6YbVAvUlt_8LcU2AWbJBEsCJuJXYZVZgs0A5iJF2WCORgS3UlfZ1PG4CZhVl6x3oiet5N0kETy-iF6VLbbEYZC=s680-w680-h510-rw",
+    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk7RWveCNUXK2-7xtZLM-17jzaD9ghtz-6B-KtI8evjxRw2BAwmesIFiWmVk7dphxy70V7Ze3Z6JodxliBqRBPCzURRn6wdQNzgmIj-rDc8moM6e2jiZiUiLuRpz4Wb-8hGsUkHD_6Yl_s=s680-w680-h510-rw",
+    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk-lC3h0J8fSCtaGk5nLIHNAC6UdM2ULr2vdB_4SsO6YPwQGTAMlgT8PMKKR78MagcP_9amkZ6eT8rKVPYsNZntt699yoz1QbzaI3mgCm6H44gmVc874aIXyg3AqR14kU0Yq8vpkw=s680-w680-h510-rw",
+    "https://lh3.googleusercontent.com/bp6YP0cgX2t01Ft8cdH2U8StozQtTdpywOsXrsaGaXdZ-yzPATUy8QHKEtzMpYrAn1_FRVbg-QwAftpguA=w1351",
+    "https://lh3.googleusercontent.com/vnUETwcpdemTDFco0ggiO_SmKtkhPz3VIVFBu0VWKAWtxcgRKHJVkWU4TGHYGsw5HYUvWb24-ewDRknP0g=w1351",
+    "https://lh3.googleusercontent.com/TOVEmybaj5bxloT-07aO_1nPHr1tzoyalot67gZdVa9AdGjSiyTFodIGIeFqbeHbjLcnEQZGbT4xxKhk7w=w1351",
+    "https://lh3.googleusercontent.com/ojYdFNikPlNNicaZcGsWLlsIFo9HWLZEWfZyPfgTTTBoRcIa1EjF9ufpXrjX9mt0XVqNJT-neF_cQfPDKA=w1351",
+    "https://lh3.googleusercontent.com/eWmQO2t05SN2n1aLQ9J7cz4_nNoub9_6bzDdQWSEoH_ZOaviTE7yyd24i1XSGqEyZKqDchYWyKcHpgzWtQ=w1351",
 ];
 
 const subtitles = [
