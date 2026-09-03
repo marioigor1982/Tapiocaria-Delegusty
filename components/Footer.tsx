@@ -105,6 +105,24 @@ const Footer: React.FC = () => {
                 />
               </a>
               <a
+                href="https://url-eu.mykeeta.com/BtpUQ7rz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm bg-white"
+                aria-label="Keeta"
+                title="Peça na Keeta"
+              >
+                <img 
+                  src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" 
+                  alt="Keeta" 
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/keeta-logo.webp';
+                  }}
+                />
+              </a>
+              <a
                 href="/cardapio-delegusty.pdf"
                 download="Cardapio-Tapioca-Delegusty.pdf"
                 target="_blank"

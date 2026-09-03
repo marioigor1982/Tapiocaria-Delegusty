@@ -278,37 +278,60 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </div>
           </div>
 
-          {/* Delivery on iFood */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-sm">
+          {/* Delivery on iFood & Keeta */}
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
-                <img 
-                  src="https://i.imgur.com/g4cIv92.png" 
-                  alt="iFood" 
-                  className="w-full h-full object-cover rounded-full" 
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    if (!target.src.includes('g4cIv92.jpg')) {
-                      target.src = 'https://i.imgur.com/g4cIv92.jpg';
-                    }
-                  }} 
-                />
+              <div className="flex items-center -space-x-2 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
+                  <img 
+                    src="https://i.imgur.com/g4cIv92.png" 
+                    alt="iFood" 
+                    className="w-full h-full object-cover rounded-full" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.src.includes('g4cIv92.jpg')) {
+                        target.src = 'https://i.imgur.com/g4cIv92.jpg';
+                      }
+                    }} 
+                  />
+                </div>
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
+                  <img 
+                    src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" 
+                    alt="Keeta" 
+                    className="w-full h-full object-cover rounded-full" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/keeta-logo.webp';
+                    }} 
+                  />
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-bold text-red-950">Quer Entrega em Domicílio?</h3>
                 <p className="text-xs text-red-800 mt-0.5">
-                  Para receber quentinho na sua casa, faça o pedido pelo iFood!
+                  Para receber quentinho na sua casa, faça seu pedido pelo iFood ou pela Keeta!
                 </p>
               </div>
             </div>
-            <a
-              href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
-            >
-              Pedir no iFood
-            </a>
+            <div className="flex items-center gap-2 flex-wrap self-end sm:self-center">
+              <a
+                href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
+              >
+                Pedir no iFood
+              </a>
+              <a
+                href="https://url-eu.mykeeta.com/BtpUQ7rz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#FFCC00] hover:bg-[#E6B800] text-stone-900 text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
+              >
+                Pedir na Keeta
+              </a>
+            </div>
           </div>
         </div>
 

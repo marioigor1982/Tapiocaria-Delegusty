@@ -282,16 +282,28 @@ const OrderModal: React.FC<OrderModalProps> = ({
               <strong className="text-orange-700 underline">RETIRADA NA LOJA</strong> (Travessa Casca Preciosa, 54 - Cohab Adventista).
             </div>
           </div>
-          <a
-            href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm"
-            title="Deseja entrega em domicílio? Peça no iFood"
-          >
-            <img src="https://i.imgur.com/g4cIv92.png" alt="iFood" className="w-5 h-5 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
-            <span>Precisa de Entrega? Peça pelo iFood</span>
-          </a>
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
+              title="Deseja entrega em domicílio? Peça no iFood"
+            >
+              <img src="https://i.imgur.com/g4cIv92.png" alt="iFood" className="w-4 h-4 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+              <span>Entrega no iFood</span>
+            </a>
+            <a
+              href="https://url-eu.mykeeta.com/BtpUQ7rz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-[#FFCC00] hover:bg-[#E6B800] text-stone-900 font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
+              title="Deseja entrega em domicílio? Peça na Keeta"
+            >
+              <img src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" alt="Keeta" className="w-4 h-4 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+              <span>Entrega na Keeta</span>
+            </a>
+          </div>
         </div>
 
         {/* Main Content Layout (Grid of items + Sticky order summary sidebar) */}
