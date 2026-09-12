@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Botão Flutuante Delivery - iFood & Keeta</title>
+  <title>Botão Flutuante Delivery (Crossfade & Expansão) - iFood & Keeta</title>
   <style>
     /* ============================================================
        ESTILOS DO BOTÃO FLUTUANTE DE DELIVERY (iFood & Keeta)
+       Puro CSS sem frameworks - Fácil de copiar e usar
        ============================================================ */
 
-    /* Container fixo no canto inferior esquerdo da tela */
+    /* Container posicionado fixo no canto da tela */
     .delivery-widget {
       position: fixed;
       bottom: 24px;
@@ -20,30 +21,30 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* O invólucro principal com transição suave de largura e raio de borda */
+    /* Invólucro circular de ~92px com transição de largura para expansão */
     .delivery-shell {
       position: relative;
       width: 92px;
       height: 92px;
-      border-radius: 46px; /* 50% quando 92px x 92px */
-      background: #ffffff;
-      box-shadow: 
-        0 12px 28px rgba(0, 0, 0, 0.22),
-        0 4px 10px rgba(0, 0, 0, 0.12);
+      border-radius: 46px; /* Círculo perfeito no tamanho padrão */
+      background: transparent;
+      border: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
       overflow: hidden;
       cursor: pointer;
-      transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-                  height 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-                  border-radius 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
-                  box-shadow 0.45s ease;
       display: flex;
       align-items: center;
+      transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+                  background-color 0.3s ease,
+                  box-shadow 0.3s ease;
     }
 
     /* ------------------------------------------------------------
-       1. ESTADO PADRÃO: TEXTURA DE GLOBO DESLIZANTE (MARQUEE)
+       1. ESTADO PADRÃO: LOGOS SOBREPOSTOS COM CROSSFADE SUAVE
+       Ciclo total de 10s: cada logo fica visível 4s e transiciona em 1s
+       Ocupam 100% do botão circular sem borda branca ou padding
        ------------------------------------------------------------ */
-    .delivery-globe-view {
+    .delivery-crossfade-view {
       position: absolute;
       top: 0;
       left: 0;
@@ -51,74 +52,50 @@
       height: 92px;
       border-radius: 50%;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      opacity: 1;
-      transition: opacity 0.3s ease;
-      background: #fafafa;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
     }
 
-    /* Faixa contínua com os logos duplicados para loop infinito perfeito */
-    .delivery-track {
-      display: flex;
-      align-items: center;
-      height: 100%;
-      width: max-content;
-      animation: globeScroll 11s linear infinite;
-      will-change: transform;
-    }
-
-    /* Animação horizontal linear (efeito textura de globo girando) */
-    @keyframes globeScroll {
-      0% {
-        transform: translateX(0);
+    /* Animação com @keyframes controlando opacidade */
+    @keyframes crossfadeCycle {
+      0%, 40% {
+        opacity: 1;
+      }
+      50%, 90% {
+        opacity: 0;
       }
       100% {
-        transform: translateX(-50%);
+        opacity: 1;
       }
     }
 
-    /* Item individual dentro da faixa deslizante */
-    .track-item {
-      width: 92px;
-      height: 92px;
+    .crossfade-item {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      padding: 14px;
-      box-sizing: border-box;
+      border-radius: 50%;
     }
 
-    .track-item img {
+    .crossfade-item img {
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
       border-radius: 50%;
-      pointer-events: none;
+      display: block;
     }
 
-    /* Camada de luz 3D fixa (luz no topo-esquerdo e sombra no inferior-direito) */
-    .delivery-globe-lighting {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 92px;
-      height: 92px;
-      border-radius: 50%;
-      pointer-events: none;
-      /* Destaque especular no canto superior esquerdo e volume esférico */
-      background: radial-gradient(
-        circle at 32% 28%,
-        rgba(255, 255, 255, 0.75) 0%,
-        rgba(255, 255, 255, 0.25) 26%,
-        rgba(255, 255, 255, 0) 58%,
-        rgba(0, 0, 0, 0.18) 90%,
-        rgba(0, 0, 0, 0.32) 100%
-      );
-      box-shadow: 
-        inset 3px 3px 6px rgba(255, 255, 255, 0.6),
-        inset -5px -5px 12px rgba(0, 0, 0, 0.25);
+    /* Logo 1 (iFood): inicia visível */
+    .crossfade-logo-1 {
+      animation: crossfadeCycle 10s ease-in-out infinite;
+    }
+
+    /* Logo 2 (Keeta): inicia com atraso de metade do ciclo (5s) */
+    .crossfade-logo-2 {
+      animation: crossfadeCycle 10s ease-in-out infinite -5s;
     }
 
     /* ------------------------------------------------------------
@@ -127,52 +104,54 @@
     .delivery-pills-view {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 12px;
       width: 100%;
       height: 100%;
       box-sizing: border-box;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.35s ease 0.1s;
+      transition: opacity 0.3s ease 0.08s;
       white-space: nowrap;
     }
 
-    /* Botões em formato 'pill' para cada aplicativo */
-    .delivery-pill-btn {
+    /* Estilo dos botões pills */
+    .delivery-pill {
+      flex: 1;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 30px;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 24px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
       cursor: pointer;
     }
 
-    .delivery-pill-btn:hover {
-      transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+    .delivery-pill:hover {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.18);
     }
 
-    .delivery-pill-btn:active {
-      transform: translateY(0) scale(0.98);
+    .delivery-pill:active {
+      transform: translateY(0) scale(0.97);
     }
 
-    .delivery-pill-btn img {
-      width: 28px;
-      height: 28px;
+    .delivery-pill img {
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       object-fit: cover;
       flex-shrink: 0;
-      background: #ffffff;
     }
 
-    /* Estilo do botão iFood */
+    /* Cores de cada marca */
     .pill-ifood {
       background-color: #EA1D2C;
       color: #ffffff;
@@ -181,7 +160,6 @@
       background-color: #d11220;
     }
 
-    /* Estilo do botão Keeta */
     .pill-keeta {
       background-color: #FFCC00;
       color: #1c1917;
@@ -190,70 +168,42 @@
       background-color: #e6b800;
     }
 
-    /* Botão de fechar sutil em mobile/touch */
-    .delivery-close-btn {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: #f1f1f1;
-      color: #666;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 2px;
-      transition: background 0.2s;
-    }
-    .delivery-close-btn:hover {
-      background: #e2e2e2;
-      color: #111;
-    }
-
     /* ------------------------------------------------------------
-       3. TRANSIÇÃO DE EXPANSÃO (HOVER OU CLASSE .is-expanded)
+       3. TRANSIÇÃO AO PASSAR O MOUSE (HOVER) OU TOQUE (.is-active)
        ------------------------------------------------------------ */
-    /* Ao passar o mouse no desktop OU quando a classe .is-expanded for adicionada via clique/touch */
+
+    /* Expande de 92px para ~210px e ganha fundo branco para contraste dos pills */
     .delivery-shell:hover,
-    .delivery-shell.is-expanded {
-      width: 320px; /* Largura suficiente para os dois pills lado a lado */
-      border-radius: 46px;
-      box-shadow: 
-        0 14px 34px rgba(0, 0, 0, 0.25),
-        0 4px 12px rgba(0, 0, 0, 0.12);
+    .delivery-shell.is-active {
+      width: 210px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
     }
 
-    /* Pausa e esconde a textura do globo */
-    .delivery-shell:hover .delivery-globe-view,
-    .delivery-shell.is-expanded .delivery-globe-view {
+    /* Pausa o crossfade e zera a opacidade dos logos giratórios */
+    .delivery-shell:hover .delivery-crossfade-view,
+    .delivery-shell.is-active .delivery-crossfade-view {
       opacity: 0;
       pointer-events: none;
     }
-    .delivery-shell:hover .delivery-track,
-    .delivery-shell.is-expanded .delivery-track {
+
+    .delivery-shell:hover .crossfade-item,
+    .delivery-shell.is-active .crossfade-item {
       animation-play-state: paused;
     }
 
-    /* Mostra os dois botões clicáveis */
+    /* Torna os dois botões clicáveis visíveis */
     .delivery-shell:hover .delivery-pills-view,
-    .delivery-shell.is-expanded .delivery-pills-view {
+    .delivery-shell.is-active .delivery-pills-view {
       opacity: 1;
       pointer-events: auto;
-    }
-
-    /* Exibe o botão de fechar quando expandido no mobile */
-    @media (max-width: 768px) {
-      .delivery-shell.is-expanded .delivery-close-btn {
-        display: flex;
-      }
     }
   </style>
 </head>
 <body style="margin: 0; padding: 40px; font-family: sans-serif; background: #f5f5f4;">
 
   <h1>Prévia do Botão Flutuante de Delivery</h1>
-  <p>Passe o mouse (no desktop) ou toque (no celular) no globo circular de 92px no canto inferior esquerdo.</p>
+  <p>Passe o mouse (no computador) ou dê um toque (no celular) no botão circular para expandir as opções de iFood e Keeta.</p>
 
   <!-- ============================================================
        CÓDIGO DO COMPONENTE (COPIE A PARTIR DAQUI)
@@ -261,39 +211,27 @@
   <div class="delivery-widget" id="deliveryWidget">
     <div class="delivery-shell" id="deliveryShell" aria-label="Pedir no iFood ou Keeta">
       
-      <!-- Visão 1: Globo Esférico com Textura Deslizante -->
-      <div class="delivery-globe-view" aria-hidden="true">
-        <!-- Faixa contínua com logos duplicados (loop sem saltos) -->
-        <div class="delivery-track">
-          <!-- Bloco 1 -->
-          <div class="track-item">
-            <img src="logo-ifood.png" alt="iFood" onerror="this.src='https://i.imgur.com/g4cIv92.png'">
-          </div>
-          <div class="track-item">
-            <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
-          </div>
-          <!-- Bloco 2 (Duplicado para loop perfeito de 10-12s) -->
-          <div class="track-item">
-            <img src="logo-ifood.png" alt="iFood" onerror="this.src='https://i.imgur.com/g4cIv92.png'">
-          </div>
-          <div class="track-item">
-            <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
-          </div>
+      <!-- 1. Logos sobrepostos com crossfade contínuo (sem borda branca, ocupando 100%) -->
+      <div class="delivery-crossfade-view" aria-hidden="true">
+        <!-- iFood (Logo 1) -->
+        <div class="crossfade-item crossfade-logo-1">
+          <img src="logo-ifood.png" alt="iFood" onerror="this.src='https://i.imgur.com/g4cIv92.png'">
         </div>
-
-        <!-- Camada de luz fixa com efeito esférico 3D (não se move) -->
-        <div class="delivery-globe-lighting"></div>
+        <!-- Keeta (Logo 2) -->
+        <div class="crossfade-item crossfade-logo-2">
+          <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
+        </div>
       </div>
 
-      <!-- Visão 2: Dois botões independentes revelados ao expandir -->
+      <!-- 2. Botões independentes ("pills") revelados na expansão -->
       <div class="delivery-pills-view">
         <!-- Botão iFood -->
         <a 
-          href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share" 
+          href="SEU-LINK-IFOOD" 
           target="_blank" 
           rel="noopener noreferrer" 
-          class="delivery-pill-btn pill-ifood"
-          title="Fazer pedido pelo iFood"
+          class="delivery-pill pill-ifood"
+          title="Pedir pelo iFood"
         >
           <img src="logo-ifood.png" alt="iFood" onerror="this.src='https://i.imgur.com/g4cIv92.png'">
           <span>iFood</span>
@@ -301,56 +239,47 @@
 
         <!-- Botão Keeta -->
         <a 
-          href="https://url-eu.mykeeta.com/BtpUQ7rz" 
+          href="SEU-LINK-KEETA" 
           target="_blank" 
           rel="noopener noreferrer" 
-          class="delivery-pill-btn pill-keeta"
-          title="Fazer pedido pela Keeta"
+          class="delivery-pill pill-keeta"
+          title="Pedir pela Keeta"
         >
           <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
           <span>Keeta</span>
         </a>
-
-        <!-- Botão opcional de fechar no mobile -->
-        <button type="button" class="delivery-close-btn" id="deliveryCloseBtn" title="Fechar">✕</button>
       </div>
 
     </div>
   </div>
 
-  <!-- Script para suporte a touch no mobile e comportamento dinâmico -->
+  <!-- Script para suporte a touch no mobile -->
   <script>
     (function () {
       var shell = document.getElementById('deliveryShell');
-      var closeBtn = document.getElementById('deliveryCloseBtn');
-
       if (!shell) return;
 
-      // Suporte a dispositivos touch (mobile)
+      // Suporte para dispositivos touch (mobile)
       shell.addEventListener('click', function (e) {
-        // Se clicar em um dos links, deixa abrir normalmente
+        // Se clicar diretamente em um link aberto, permite navegação normal
         if (e.target.closest('a')) {
           return;
         }
 
-        // Se clicar no botão fechar, recolhe
-        if (e.target.closest('#deliveryCloseBtn')) {
-          e.stopPropagation();
-          shell.classList.remove('is-expanded');
-          return;
-        }
-
-        // Se não estiver expandido, expande
-        if (!shell.classList.contains('is-expanded')) {
+        // Primeiro toque: expande o botão revelando as opções
+        if (!shell.classList.contains('is-active')) {
           e.preventDefault();
-          shell.classList.add('is-expanded');
+          shell.classList.add('is-active');
+        } else {
+          // Se já estiver expandido e clicar fora dos links, recolhe
+          shell.classList.remove('is-active');
         }
       });
 
       // Fechar ao tocar fora do botão
       document.addEventListener('click', function (e) {
         if (!shell.contains(e.target)) {
-          shell.classList.remove('is-expanded');
+          shell.classList.remove('is-active');
         }
       });
     })();
