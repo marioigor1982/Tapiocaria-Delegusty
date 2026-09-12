@@ -29,7 +29,7 @@ const FloatingIFood: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
     handleScroll();
 
     return () => {
@@ -41,13 +41,41 @@ const FloatingIFood: React.FC = () => {
     };
   }, []);
 
-  const handleContainerClick = (e: React.MouseEvent) => {
-    // Se o clique for em um link de pedido, permite navegação normal
-    if ((e.target as HTMLElement).closest('a')) {
-      return;
+  // No desktop com mouse: expande ao passar o mouse e recolhe ao sair
+  const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setIsExpanded(true);
     }
-    // No toque em mobile, expande ou recolhe o botão
-    setIsExpanded((prev) => !prev);
+  };
+
+  const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      setIsExpanded(false);
+    }
+  };
+
+  // No mobile / clique: ao clicar no botão fechado, SEMPRE expande e mostra as 2 opções
+  const handleShellClick = (e: React.MouseEvent) => {
+    if (!isExpanded) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsExpanded(true);
+    }
+  };
+
+  // Se por qualquer motivo um clique alcançar o link antes de expandir, impede navegação e abre as opções
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (!isExpanded) {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsExpanded(true);
+    }
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsExpanded(false);
   };
 
   const shouldShow = isVisible && !isContactVisible;
@@ -59,10 +87,12 @@ const FloatingIFood: React.FC = () => {
         shouldShow ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
       style={{ userSelect: 'none' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <style>{`
-        /* Crossfade suave entre os logos com ciclo de 10s (4s visível + 1s fade) */
-        @keyframes deliveryCrossfade {
+        /* Animação suave de crossfade contínuo de 10s entre iFood e Keeta */
+        @keyframes deliveryCrossfadeCycle {
           0%, 40% {
             opacity: 1;
           }
@@ -74,57 +104,38 @@ const FloatingIFood: React.FC = () => {
           }
         }
 
-        .delivery-fade-logo-1 {
-          animation: deliveryCrossfade 10s ease-in-out infinite;
+        .delivery-fade-1 {
+          animation: deliveryCrossfadeCycle 10s ease-in-out infinite;
         }
 
-        .delivery-fade-logo-2 {
-          animation: deliveryCrossfade 10s ease-in-out infinite -5s;
-        }
-
-        /* Pausa a animação e zera opacidade no hover ou quando expandido */
-        .delivery-shell:hover .delivery-crossfade-view,
-        .delivery-shell.is-active .delivery-crossfade-view {
-          opacity: 0 !important;
-          pointer-events: none;
-        }
-        .delivery-shell:hover .delivery-fade-logo-1,
-        .delivery-shell:hover .delivery-fade-logo-2,
-        .delivery-shell.is-active .delivery-fade-logo-1,
-        .delivery-shell.is-active .delivery-fade-logo-2 {
-          animation-play-state: paused;
-        }
-
-        /* Expansão de largura no hover ou quando expandido (de 74px para ~196px) */
-        .delivery-shell:hover,
-        .delivery-shell.is-active {
-          width: 196px !important;
-        }
-
-        /* Revela os botões pills no hover ou expandido */
-        .delivery-shell:hover .delivery-pills-view,
-        .delivery-shell.is-active .delivery-pills-view {
-          opacity: 1 !important;
-          pointer-events: auto !important;
+        .delivery-fade-2 {
+          animation: deliveryCrossfadeCycle 10s ease-in-out infinite -5s;
         }
       `}</style>
 
-      {/* Botão Flutuante Principal - Dimensão ajustada de 74px */}
+      {/* Invólucro Principal do Botão Flutuante (Sem borda ou fundo branco) */}
       <div
-        onClick={handleContainerClick}
-        className={`delivery-shell relative h-[74px] w-[74px] rounded-full bg-transparent shadow-2xl cursor-pointer flex items-center overflow-hidden border-0 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          isExpanded ? 'is-active !bg-white' : 'hover:scale-105'
+        onClick={handleShellClick}
+        className={`delivery-shell relative h-[68px] rounded-full bg-transparent cursor-pointer flex items-center transition-all duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          isExpanded
+            ? 'w-[224px] sm:w-[236px]'
+            : 'w-[68px] hover:scale-105 shadow-2xl'
         }`}
         title="Peça seu delivery pelo iFood ou pela Keeta"
         aria-label="Delivery iFood e Keeta"
       >
         {/* ============================================================
-            1. ESTADO PADRÃO: LOGOS SOBREPOSTOS COM CROSSFADE SUAVE
-            Ocupam 100% do botão circular (74px), sem borda branca ou padding
+            1. ESTADO FECHADO (PADRÃO): LOGOS CIRCULARES COM CROSSFADE
+            Sem borda branca, preenchendo 100% do círculo (68px)
             ============================================================ */}
-        <div className="delivery-crossfade-view absolute inset-0 w-[74px] h-[74px] rounded-full overflow-hidden transition-opacity duration-300">
+        <div
+          className={`absolute inset-0 w-[68px] h-[68px] rounded-full overflow-hidden transition-all duration-300 ${
+            isExpanded ? 'opacity-0 pointer-events-none scale-90' : 'opacity-100 pointer-events-auto scale-100'
+          }`}
+          aria-hidden={isExpanded}
+        >
           {/* Logo 1: iFood */}
-          <div className="delivery-fade-logo-1 absolute inset-0 w-full h-full">
+          <div className="delivery-fade-1 absolute inset-0 w-full h-full">
             <img
               src="/logo-ifood.png"
               alt="iFood"
@@ -135,8 +146,8 @@ const FloatingIFood: React.FC = () => {
             />
           </div>
 
-          {/* Logo 2: Keeta (atraso de 5s para alternância perfeita) */}
-          <div className="delivery-fade-logo-2 absolute inset-0 w-full h-full">
+          {/* Logo 2: Keeta (ciclo alternado de 5s) */}
+          <div className="delivery-fade-2 absolute inset-0 w-full h-full">
             <img
               src="/logo-keeta.png"
               alt="Keeta"
@@ -150,22 +161,28 @@ const FloatingIFood: React.FC = () => {
         </div>
 
         {/* ============================================================
-            2. ESTADO EXPANDIDO (HOVER / TOQUE): DOIS PILLS INDEPENDENTES
+            2. ESTADO EXPANDIDO: DUAS OPÇÕES VISÍVEIS (iFood + Keeta)
+            Sem fundo branco envolvente - Os próprios botões são coloridos
             ============================================================ */}
-        <div className="delivery-pills-view flex items-center justify-center gap-2 px-2.5 w-full opacity-0 pointer-events-none transition-opacity duration-300 whitespace-nowrap">
-          {/* Pill iFood */}
+        <div
+          className={`flex items-center justify-between gap-1.5 px-1 w-full h-full transition-all duration-300 ${
+            isExpanded ? 'opacity-100 pointer-events-auto scale-100' : 'opacity-0 pointer-events-none scale-95'
+          }`}
+        >
+          {/* Botão iFood */}
           <a
             href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs py-1.5 px-2 rounded-full shadow-md transition-all duration-200"
-            title="Pedir pelo iFood"
-            aria-label="Pedir pelo iFood"
+            onClick={handleLinkClick}
+            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs sm:text-sm px-2.5 rounded-full shadow-xl transition-all duration-200"
+            title="Abrir no iFood"
+            aria-label="Abrir no iFood"
           >
             <img
               src="/logo-ifood.png"
               alt="iFood"
-              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://i.imgur.com/g4cIv92.png';
               }}
@@ -173,19 +190,20 @@ const FloatingIFood: React.FC = () => {
             <span>iFood</span>
           </a>
 
-          {/* Pill Keeta */}
+          {/* Botão Keeta */}
           <a
             href="https://url-eu.mykeeta.com/BtpUQ7rz"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs py-1.5 px-2 rounded-full shadow-md transition-all duration-200"
-            title="Pedir pela Keeta"
-            aria-label="Pedir pela Keeta"
+            onClick={handleLinkClick}
+            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs sm:text-sm px-2.5 rounded-full shadow-xl transition-all duration-200"
+            title="Abrir na Keeta"
+            aria-label="Abrir na Keeta"
           >
             <img
               src="/logo-keeta.png"
               alt="Keeta"
-              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   'https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw';
@@ -193,6 +211,25 @@ const FloatingIFood: React.FC = () => {
             />
             <span>Keeta</span>
           </a>
+
+          {/* Botão Fechar / Recolher */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="w-7 h-7 rounded-full bg-stone-800/80 hover:bg-stone-900 active:scale-90 text-white flex items-center justify-center shadow-md transition-all duration-150 flex-shrink-0"
+            title="Fechar opções"
+            aria-label="Fechar opções"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
