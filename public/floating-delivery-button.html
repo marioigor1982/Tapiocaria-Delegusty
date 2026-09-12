@@ -21,12 +21,12 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Invólucro circular de ~92px com transição de largura para expansão */
+    /* Invólucro circular de 74px (proporção balanceada) */
     .delivery-shell {
       position: relative;
-      width: 92px;
-      height: 92px;
-      border-radius: 46px; /* Círculo perfeito no tamanho padrão */
+      width: 74px;
+      height: 74px;
+      border-radius: 37px; /* Círculo perfeito no tamanho padrão */
       background: transparent;
       border: none;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
@@ -42,14 +42,14 @@
     /* ------------------------------------------------------------
        1. ESTADO PADRÃO: LOGOS SOBREPOSTOS COM CROSSFADE SUAVE
        Ciclo total de 10s: cada logo fica visível 4s e transiciona em 1s
-       Ocupam 100% do botão circular sem borda branca ou padding
+       Ocupam 100% do botão circular (74px) sem borda branca ou padding
        ------------------------------------------------------------ */
     .delivery-crossfade-view {
       position: absolute;
       top: 0;
       left: 0;
-      width: 92px;
-      height: 92px;
+      width: 74px;
+      height: 74px;
       border-radius: 50%;
       overflow: hidden;
       pointer-events: none;
@@ -105,8 +105,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      padding: 0 12px;
+      gap: 8px;
+      padding: 0 10px;
       width: 100%;
       height: 100%;
       box-sizing: border-box;
@@ -122,12 +122,12 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 8px 12px;
-      border-radius: 24px;
+      gap: 5px;
+      padding: 6px 10px;
+      border-radius: 20px;
       text-decoration: none;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       line-height: 1;
       box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
       transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
@@ -144,8 +144,8 @@
     }
 
     .delivery-pill img {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       object-fit: cover;
       flex-shrink: 0;
@@ -172,10 +172,10 @@
        3. TRANSIÇÃO AO PASSAR O MOUSE (HOVER) OU TOQUE (.is-active)
        ------------------------------------------------------------ */
 
-    /* Expande de 92px para ~210px e ganha fundo branco para contraste dos pills */
+    /* Expande de 74px para ~196px e ganha fundo branco para contraste dos pills */
     .delivery-shell:hover,
     .delivery-shell.is-active {
-      width: 210px;
+      width: 196px;
       background: #ffffff;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
     }

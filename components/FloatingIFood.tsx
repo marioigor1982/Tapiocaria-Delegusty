@@ -95,10 +95,10 @@ const FloatingIFood: React.FC = () => {
           animation-play-state: paused;
         }
 
-        /* Expansão de largura no hover ou quando expandido (de 92px para ~210px) */
+        /* Expansão de largura no hover ou quando expandido (de 74px para ~196px) */
         .delivery-shell:hover,
         .delivery-shell.is-active {
-          width: 210px !important;
+          width: 196px !important;
         }
 
         /* Revela os botões pills no hover ou expandido */
@@ -109,20 +109,20 @@ const FloatingIFood: React.FC = () => {
         }
       `}</style>
 
-      {/* Botão Flutuante Principal */}
+      {/* Botão Flutuante Principal - Dimensão ajustada de 74px */}
       <div
         onClick={handleContainerClick}
-        className={`delivery-shell relative h-[92px] w-[92px] rounded-full bg-transparent shadow-xl cursor-pointer flex items-center overflow-hidden border-0 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
-          isExpanded ? 'is-active !bg-white' : ''
+        className={`delivery-shell relative h-[74px] w-[74px] rounded-full bg-transparent shadow-2xl cursor-pointer flex items-center overflow-hidden border-0 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
+          isExpanded ? 'is-active !bg-white' : 'hover:scale-105'
         }`}
         title="Peça seu delivery pelo iFood ou pela Keeta"
         aria-label="Delivery iFood e Keeta"
       >
         {/* ============================================================
             1. ESTADO PADRÃO: LOGOS SOBREPOSTOS COM CROSSFADE SUAVE
-            Ocupam 100% do botão circular, sem borda branca ou padding
+            Ocupam 100% do botão circular (74px), sem borda branca ou padding
             ============================================================ */}
-        <div className="delivery-crossfade-view absolute inset-0 w-full h-full rounded-full overflow-hidden transition-opacity duration-300">
+        <div className="delivery-crossfade-view absolute inset-0 w-[74px] h-[74px] rounded-full overflow-hidden transition-opacity duration-300">
           {/* Logo 1: iFood */}
           <div className="delivery-fade-logo-1 absolute inset-0 w-full h-full">
             <img
@@ -152,20 +152,20 @@ const FloatingIFood: React.FC = () => {
         {/* ============================================================
             2. ESTADO EXPANDIDO (HOVER / TOQUE): DOIS PILLS INDEPENDENTES
             ============================================================ */}
-        <div className="delivery-pills-view flex items-center justify-center gap-2.5 px-3 w-full opacity-0 pointer-events-none transition-opacity duration-300 whitespace-nowrap">
+        <div className="delivery-pills-view flex items-center justify-center gap-2 px-2.5 w-full opacity-0 pointer-events-none transition-opacity duration-300 whitespace-nowrap">
           {/* Pill iFood */}
           <a
             href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs py-2 px-3 rounded-full shadow-md transition-all duration-200"
+            className="flex-1 flex items-center justify-center gap-1 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs py-1.5 px-2 rounded-full shadow-md transition-all duration-200"
             title="Pedir pelo iFood"
             aria-label="Pedir pelo iFood"
           >
             <img
               src="/logo-ifood.png"
               alt="iFood"
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://i.imgur.com/g4cIv92.png';
               }}
@@ -178,14 +178,14 @@ const FloatingIFood: React.FC = () => {
             href="https://url-eu.mykeeta.com/BtpUQ7rz"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs py-2 px-3 rounded-full shadow-md transition-all duration-200"
+            className="flex-1 flex items-center justify-center gap-1 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs py-1.5 px-2 rounded-full shadow-md transition-all duration-200"
             title="Pedir pela Keeta"
             aria-label="Pedir pela Keeta"
           >
             <img
               src="/logo-keeta.png"
               alt="Keeta"
-              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              className="w-5 h-5 rounded-full object-cover flex-shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   'https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw';
