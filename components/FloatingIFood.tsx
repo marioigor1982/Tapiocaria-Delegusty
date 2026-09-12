@@ -2,19 +2,39 @@ import React, { useState, useEffect } from 'react';
 
 const FloatingIFood: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isContactVisible, setIsContactVisible] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
     }, 1000);
 
-    return () => clearTimeout(timer);
+    const handleScroll = () => {
+      const contactEl = document.getElementById('contato');
+      if (contactEl) {
+        const rect = contactEl.getBoundingClientRect();
+        // Oculta quando a seção Contato entra na área visível da tela
+        setIsContactVisible(rect.top < window.innerHeight && rect.bottom > 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
+
+  const shouldShow = isVisible && !isContactVisible;
 
   return (
     <div
       className={`fixed bottom-6 left-6 z-40 flex flex-col gap-3 transition-all duration-500 ease-in-out ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        shouldShow ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
     >
       {/* iFood */}
@@ -73,3 +93,5 @@ const FloatingIFood: React.FC = () => {
 };
 
 export default FloatingIFood;
+
+
