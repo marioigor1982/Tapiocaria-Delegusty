@@ -137,7 +137,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <div className="text-right">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-600 font-bold text-xs">
                         <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                        Fechado • Abre às 18
+                        Fechado • {storeStatus.badgeOpenText}
                       </span>
                     </div>
                   )}
@@ -177,7 +177,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           <span>Fechado</span>
                         </div>
                         <span className="text-xs text-stone-500 font-medium mt-1">
-                          Abre às 18
+                          {storeStatus.badgeOpenText}
                         </span>
                       </div>
                     )

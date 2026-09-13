@@ -220,13 +220,17 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-white text-base font-bold uppercase tracking-wider mb-4">Horário de Funcionamento</h3>
             <div className="text-sm">
-                <div className="flex justify-between items-center border-b border-stone-700 py-3">
-                    <span>Segunda, Quarta à Domingo</span>
-                    <span className="text-white">18h - 23:59h</span>
+                <div className="flex justify-between items-center border-b border-stone-700 py-2.5">
+                    <span>Segunda, Quarta a Sábado</span>
+                    <span className="text-white font-medium">18h - 23:59h</span>
                 </div>
-                 <div className="flex justify-between items-center border-b border-stone-700 py-3">
+                <div className="flex justify-between items-center border-b border-stone-700 py-2.5">
+                    <span className="text-amber-400 font-medium">Domingo (abre mais cedo)</span>
+                    <span className="text-amber-400 font-bold">17h - 23:59h</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-stone-700 py-2.5">
                     <span>Terça-feira</span>
-                    <span className="text-white">Fechado</span>
+                    <span className="text-stone-400">Fechado</span>
                 </div>
                 <div className="flex justify-between items-center pt-4 mt-2">
                     <span>Status</span>

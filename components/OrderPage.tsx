@@ -215,7 +215,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 </>
               ) : (
                 <>
-                  Consulte todos os nossos sabores, fotos, ingredientes e preços abaixo. A opção de realizar pedidos é liberada automaticamente no nosso horário de funcionamento (<strong>Segunda, Quarta à Domingo das 18h às 23:59h</strong>).
+                  Consulte todos os nossos sabores, fotos, ingredientes e preços abaixo. A opção de realizar pedidos é liberada automaticamente no nosso horário de funcionamento (<strong>Segunda, Quarta a Sábado das 18h às 23:59h • Domingo das 17h às 23:59h</strong>).
                 </>
               )}
             </p>
@@ -242,7 +242,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     Fechado no momento
                   </span>
                   <span className="text-xs text-amber-900 font-bold">
-                    Abre às 18h (Seg, Qua a Dom das 18h às 23:59h • Terça fechado)
+                    {storeStatus.hoursText}
                   </span>
                 </div>
                 <p className="text-sm text-stone-700 mt-1.5 leading-relaxed">
@@ -659,10 +659,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                   <div>
                     <div className="text-sm font-bold text-stone-900 flex items-center gap-2">
                       <span>Fechado</span>
-                      <span className="text-xs font-normal text-stone-500">(18h às 23:59h)</span>
+                      <span className="text-xs font-normal text-stone-500">({storeStatus.badgeOpenText})</span>
                     </div>
                     <div className="text-xs text-stone-600 font-medium">
-                      Abre às 18h • Seg, Qua a Dom
+                      {storeStatus.shortHoursText} • Terça fechado
                     </div>
                   </div>
                 </div>

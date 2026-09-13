@@ -114,7 +114,7 @@ const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
                                     <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
                                     <span>Fechado</span>
                                     <span className="text-xs bg-stone-700/80 text-stone-300 px-2.5 py-0.5 rounded-full font-normal">
-                                        Abre às 18
+                                        {storeStatus.badgeOpenText}
                                     </span>
                                 </>
                             )}

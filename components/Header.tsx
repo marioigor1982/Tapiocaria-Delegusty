@@ -252,7 +252,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                             ? 'bg-green-600 hover:bg-green-700 text-white'
                                             : 'bg-stone-800/90 hover:bg-stone-900 text-stone-200 border border-stone-600'
                                     }`}
-                                    title={storeStatus.isOpen ? "Faça seu Pedido para Retirada no Balcão" : "Fechado • Abre às 18"}
+                                    title={storeStatus.isOpen ? "Faça seu Pedido para Retirada no Balcão" : `Fechado • ${storeStatus.badgeOpenText}`}
                                 >
                                     {storeStatus.isOpen ? (
                                         <>
@@ -266,7 +266,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                             <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
                                             <span>Fechado</span>
                                             <span className="text-[11px] bg-stone-700 text-stone-300 px-1.5 py-0.5 rounded font-normal">
-                                                Abre às 18
+                                                {storeStatus.badgeOpenText}
                                             </span>
                                         </>
                                     )}
@@ -350,7 +350,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
                                             <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
                                             <span>Fechado</span>
                                             <span className="text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded-full font-normal">
-                                                Abre às 18
+                                                {storeStatus.badgeOpenText}
                                             </span>
                                         </>
                                     )}
