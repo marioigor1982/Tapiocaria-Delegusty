@@ -91,12 +91,12 @@ const FloatingIFood: React.FC = () => {
       onMouseLeave={handleMouseLeave}
     >
       <style>{`
-        /* Animação suave de crossfade contínuo de 10s entre iFood e Keeta */
+        /* Animação suave de crossfade contínuo de 12s entre iFood, Keeta e 99Food */
         @keyframes deliveryCrossfadeCycle {
-          0%, 40% {
+          0%, 28% {
             opacity: 1;
           }
-          50%, 90% {
+          33.33%, 95% {
             opacity: 0;
           }
           100% {
@@ -105,11 +105,15 @@ const FloatingIFood: React.FC = () => {
         }
 
         .delivery-fade-1 {
-          animation: deliveryCrossfadeCycle 10s ease-in-out infinite;
+          animation: deliveryCrossfadeCycle 12s ease-in-out infinite;
         }
 
         .delivery-fade-2 {
-          animation: deliveryCrossfadeCycle 10s ease-in-out infinite -5s;
+          animation: deliveryCrossfadeCycle 12s ease-in-out infinite -8s;
+        }
+
+        .delivery-fade-3 {
+          animation: deliveryCrossfadeCycle 12s ease-in-out infinite -4s;
         }
       `}</style>
 
@@ -118,11 +122,11 @@ const FloatingIFood: React.FC = () => {
         onClick={handleShellClick}
         className={`delivery-shell relative h-[68px] rounded-full bg-transparent cursor-pointer flex items-center transition-all duration-400 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${
           isExpanded
-            ? 'w-[224px] sm:w-[236px]'
+            ? 'w-[300px] sm:w-[320px]'
             : 'w-[68px] hover:scale-105 shadow-2xl'
         }`}
-        title="Peça seu delivery pelo iFood ou pela Keeta"
-        aria-label="Delivery iFood e Keeta"
+        title="Peça seu delivery pelo iFood, Keeta ou 99Food"
+        aria-label="Delivery iFood, Keeta e 99Food"
       >
         {/* ============================================================
             1. ESTADO FECHADO (PADRÃO): LOGOS CIRCULARES COM CROSSFADE
@@ -146,7 +150,7 @@ const FloatingIFood: React.FC = () => {
             />
           </div>
 
-          {/* Logo 2: Keeta (ciclo alternado de 5s) */}
+          {/* Logo 2: Keeta */}
           <div className="delivery-fade-2 absolute inset-0 w-full h-full">
             <img
               src="/logo-keeta.png"
@@ -158,10 +162,22 @@ const FloatingIFood: React.FC = () => {
               }}
             />
           </div>
+
+          {/* Logo 3: 99Food */}
+          <div className="delivery-fade-3 absolute inset-0 w-full h-full">
+            <img
+              src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420"
+              alt="99Food"
+              className="w-full h-full object-cover rounded-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo-99food.png';
+              }}
+            />
+          </div>
         </div>
 
         {/* ============================================================
-            2. ESTADO EXPANDIDO: DUAS OPÇÕES VISÍVEIS (iFood + Keeta)
+            2. ESTADO EXPANDIDO: TRÊS OPÇÕES VISÍVEIS (iFood + Keeta + 99Food)
             Sem fundo branco envolvente - Os próprios botões são coloridos
             ============================================================ */}
         <div
@@ -175,7 +191,7 @@ const FloatingIFood: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleLinkClick}
-            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs sm:text-sm px-2.5 rounded-full shadow-xl transition-all duration-200"
+            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#EA1D2C] hover:bg-[#d11220] active:scale-95 text-white font-bold text-xs sm:text-sm px-2 rounded-full shadow-xl transition-all duration-200"
             title="Abrir no iFood"
             aria-label="Abrir no iFood"
           >
@@ -196,7 +212,7 @@ const FloatingIFood: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleLinkClick}
-            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs sm:text-sm px-2.5 rounded-full shadow-xl transition-all duration-200"
+            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#FFCC00] hover:bg-[#e6b800] active:scale-95 text-stone-900 font-bold text-xs sm:text-sm px-2 rounded-full shadow-xl transition-all duration-200"
             title="Abrir na Keeta"
             aria-label="Abrir na Keeta"
           >
@@ -210,6 +226,27 @@ const FloatingIFood: React.FC = () => {
               }}
             />
             <span>Keeta</span>
+          </a>
+
+          {/* Botão 99Food */}
+          <a
+            href="https://oia.99app.com/dlp9/47Uaqz"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleLinkClick}
+            className="flex-1 h-[48px] flex items-center justify-center gap-1.5 bg-[#FF8100] hover:bg-[#e67400] active:scale-95 text-white font-bold text-xs sm:text-sm px-2 rounded-full shadow-xl transition-all duration-200"
+            title="Abrir no 99Food"
+            aria-label="Abrir no 99Food"
+          >
+            <img
+              src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420"
+              alt="99Food"
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0 bg-white"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo-99food.png';
+              }}
+            />
+            <span>99Food</span>
           </a>
 
           {/* Botão Fechar / Recolher */}

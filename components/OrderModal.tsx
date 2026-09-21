@@ -303,6 +303,16 @@ const OrderModal: React.FC<OrderModalProps> = ({
               <img src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" alt="Keeta" className="w-4 h-4 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
               <span>Entrega na Keeta</span>
             </a>
+            <a
+              href="https://oia.99app.com/dlp9/47Uaqz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-[#FF8100] hover:bg-[#E67400] text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
+              title="Deseja entrega em domicílio? Peça no 99Food"
+            >
+              <img src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420" alt="99Food" className="w-4 h-4 rounded-full object-cover bg-white" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+              <span>Entrega no 99Food</span>
+            </a>
           </div>
         </div>
 

@@ -123,6 +123,24 @@ const Footer: React.FC = () => {
                 />
               </a>
               <a
+                href="https://oia.99app.com/dlp9/47Uaqz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 overflow-hidden shadow-sm bg-white"
+                aria-label="99Food"
+                title="Peça no 99Food"
+              >
+                <img 
+                  src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420" 
+                  alt="99Food" 
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/logo-99food.png';
+                  }}
+                />
+              </a>
+              <a
                 href="/cardapio-delegusty.pdf"
                 download="Cardapio-Tapioca-Delegusty.pdf"
                 target="_blank"

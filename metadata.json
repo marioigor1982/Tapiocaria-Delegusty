@@ -1,6 +1,6 @@
 {
   "name": "Tapioca Delegusty",
-  "description": "Descubra o sabor autêntico da tapioca na Delegusty. Oferecemos uma variedade incrível de tapiocas doces, salgadas e bebidas com cardápio completo e pedidos rápidos para retirada no balcão via WhatsApp e delivery via iFood.",
+  "description": "Descubra o sabor autêntico da tapioca na Delegusty. Oferecemos uma variedade incrível de tapiocas doces, salgadas e bebidas com cardápio completo e pedidos rápidos para retirada no balcão via WhatsApp e delivery via iFood, Keeta e 99Food.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

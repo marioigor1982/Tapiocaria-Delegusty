@@ -278,8 +278,8 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </div>
           </div>
 
-          {/* Delivery on iFood & Keeta */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          {/* Delivery on iFood, Keeta & 99Food */}
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="flex items-center -space-x-2 flex-shrink-0">
                 <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
@@ -306,15 +306,26 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     }} 
                   />
                 </div>
+                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
+                  <img 
+                    src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420" 
+                    alt="99Food" 
+                    className="w-full h-full object-cover rounded-full" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/logo-99food.png';
+                    }} 
+                  />
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-bold text-red-950">Quer Entrega em Domicílio?</h3>
                 <p className="text-xs text-red-800 mt-0.5">
-                  Para receber quentinho na sua casa, faça seu pedido pelo iFood ou pela Keeta!
+                  Para receber quentinho na sua casa, faça seu pedido pelo iFood, Keeta ou 99Food!
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap self-end sm:self-center">
+            <div className="flex items-center gap-2 flex-wrap self-end lg:self-center">
               <a
                 href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
                 target="_blank"
@@ -330,6 +341,14 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 className="bg-[#FFCC00] hover:bg-[#E6B800] text-stone-900 text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
               >
                 Pedir na Keeta
+              </a>
+              <a
+                href="https://oia.99app.com/dlp9/47Uaqz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#FF8100] hover:bg-[#E67400] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
+              >
+                Pedir no 99Food
               </a>
             </div>
           </div>

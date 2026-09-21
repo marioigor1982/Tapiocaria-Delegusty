@@ -54,10 +54,10 @@
     }
 
     @keyframes crossfadeCycle {
-      0%, 40% {
+      0%, 28% {
         opacity: 1;
       }
-      50%, 90% {
+      33.33%, 95% {
         opacity: 0;
       }
       100% {
@@ -85,11 +85,15 @@
     }
 
     .crossfade-logo-1 {
-      animation: crossfadeCycle 10s ease-in-out infinite;
+      animation: crossfadeCycle 12s ease-in-out infinite;
     }
 
     .crossfade-logo-2 {
-      animation: crossfadeCycle 10s ease-in-out infinite -5s;
+      animation: crossfadeCycle 12s ease-in-out infinite -8s;
+    }
+
+    .crossfade-logo-3 {
+      animation: crossfadeCycle 12s ease-in-out infinite -4s;
     }
 
     /* ------------------------------------------------------------
@@ -161,6 +165,14 @@
       background-color: #e6b800;
     }
 
+    .pill-99food {
+      background-color: #FF8100;
+      color: #ffffff;
+    }
+    .pill-99food:hover {
+      background-color: #e67400;
+    }
+
     .delivery-close-btn {
       width: 28px;
       height: 28px;
@@ -191,7 +203,7 @@
     /* Suporte a desktop com mouse: hover suave */
     @media (hover: hover) and (pointer: fine) {
       .delivery-shell:hover {
-        width: 236px;
+        width: 316px;
       }
       .delivery-shell:hover .delivery-crossfade-view {
         opacity: 0;
@@ -210,7 +222,7 @@
 
     /* Estado ativo (clique no mobile ou clique no desktop) */
     .delivery-shell.is-active {
-      width: 236px;
+      width: 316px;
     }
     .delivery-shell.is-active .delivery-crossfade-view {
       opacity: 0;
@@ -236,7 +248,7 @@
        CÓDIGO DO COMPONENTE (COPIE A PARTIR DAQUI)
        ============================================================ -->
   <div class="delivery-widget" id="deliveryWidget">
-    <div class="delivery-shell" id="deliveryShell" aria-label="Pedir no iFood ou Keeta">
+    <div class="delivery-shell" id="deliveryShell" aria-label="Pedir no iFood, Keeta ou 99Food">
       
       <!-- 1. Logos sobrepostos com crossfade contínuo -->
       <div class="delivery-crossfade-view" id="deliveryCrossfade" aria-hidden="true">
@@ -248,13 +260,17 @@
         <div class="crossfade-item crossfade-logo-2">
           <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
         </div>
+        <!-- 99Food (Logo 3) -->
+        <div class="crossfade-item crossfade-logo-3">
+          <img src="logo-99food.png" alt="99Food" onerror="this.src='https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420'">
+        </div>
       </div>
 
       <!-- 2. Botões independentes ("pills") revelados na expansão -->
       <div class="delivery-pills-view" id="deliveryPills">
         <!-- Botão iFood -->
         <a 
-          href="SEU-LINK-IFOOD" 
+          href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share" 
           target="_blank" 
           rel="noopener noreferrer" 
           class="delivery-pill pill-ifood"
@@ -266,7 +282,7 @@
 
         <!-- Botão Keeta -->
         <a 
-          href="SEU-LINK-KEETA" 
+          href="https://url-eu.mykeeta.com/BtpUQ7rz" 
           target="_blank" 
           rel="noopener noreferrer" 
           class="delivery-pill pill-keeta"
@@ -274,6 +290,18 @@
         >
           <img src="logo-keeta.png" alt="Keeta" onerror="this.src='https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw'">
           <span>Keeta</span>
+        </a>
+
+        <!-- Botão 99Food -->
+        <a 
+          href="https://oia.99app.com/dlp9/47Uaqz" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          class="delivery-pill pill-99food"
+          title="Pedir pelo 99Food"
+        >
+          <img src="logo-99food.png" alt="99Food" onerror="this.src='https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420'">
+          <span>99Food</span>
         </a>
 
         <!-- Botão Fechar -->
