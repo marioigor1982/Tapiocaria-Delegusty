@@ -208,7 +208,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     name: 'MORANGO CREME',
     description: 'COCO RALADO, CREME DE MORANGO E LEITE CONDENSADO.',
     images: [
-      { url: 'https://www.estadao.com.br/resizer/v2/2Z3ZSSS27BAJ3CKSYRGUTAGC6Y.jpg?quality=80&auth=a5f577569ac49f121ff64877124c6eccb08c181f84e14bd90ad174682d049e82&width=720&height=410&smart=true', isMain: true },
+      { url: 'https://lh3.googleusercontent.com/gps-cs-s/ANWiy9Tt26t_0teJ5Qr5G5dUvnk3ZrH18iqsTTGULDo1WNzYBdy3SCzyL_lecDpuh2KyIuZlnmdF_vO8YoqH-vzBPOl2OfxAC3dm1lioXoEZLQ_LHyhPm4ZLYY3F6W35QS0tDmh9w2afGO6jj64j=s680-w680-h510-rw', isMain: true },
     ],
     price: 'R$ 10,00',
   },
