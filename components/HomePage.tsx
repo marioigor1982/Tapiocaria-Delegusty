@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from './Hero';
 import AboutUs from './AboutUs';
+import Gallery from './Gallery';
 import MenuHighlight from './MenuHighlight';
 
 type Page = 'doces' | 'salgadas' | 'bebidas';
@@ -15,6 +16,7 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenOrder }) => {
     <>
       <Hero onOpenOrder={onOpenOrder} />
       <AboutUs />
+      <Gallery />
       <MenuHighlight onNavigate={onNavigate} />
     </>
   );

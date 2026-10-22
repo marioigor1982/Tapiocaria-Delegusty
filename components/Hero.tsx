@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStoreStatus } from '../hooks/useStoreStatus';
 
-const images = [
+const VALID_HERO_IMAGES = [
     "https://i.pinimg.com/originals/01/86/6b/01866b9c1a1546c3d82b5d90dfcf2694.jpg",
-    "https://cdn.create.vista.com/api/media/small/207936640/stock-photo-tapioca-filled-hazelnut-cream-banana-slices",
-    "https://cdn.create.vista.com/api/media/small/207500020/stock-photo-tapioca-filled-hazelnuts-cream-fresh-strawberries",
     "https://img.freepik.com/fotos-premium/tapioca-recheada-com-tapioca-brasileira-de-frango_434193-1156.jpg?semt=ais_hybrid&w=740",
     "https://t3.ftcdn.net/jpg/05/46/01/62/360_F_546016297_G0pTcVLFOb5BkzqyDy7joxASlX3sorgz.jpg",
-    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWlhU4wODjBtbi6-0ArzoOaYnNZ62p1NBlAWO1F4AS4p9CgT0FbRUkSI3cNDOEemThoCkhSOyGoYgZy5XMPgs0tlG4uCbODPolzssAfEa-jITB5gOe75K5br8j4yErlkNmdli7bv42Jkt383=s680-w680-h510-rw",
-    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkwbC0QSP1OqYn725ZUAVrBMxZ-C06bTVmaiFwe8fHCYCdEFyv2z1EplTQqe9kyd7lIU3ufEvdt_bd7wdpklpOF3AEg1g9mItllOZG2GV6XKXqcUcE7nFMuyiQtI-nWDQJPLWz93fwAQqM=s680-w680-h510-rw",
-    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWnjGuVFGTCdCiWZP63d2ADQboUnItoqHe_DODQG6B1NLf-ekS5arqp7Tl6YbVAvUlt_8LcU2AWbJBEsCJuJXYZVZgs0A5iJF2WCORgS3UlfZ1PG4CZhVl6x3oiet5N0kETy-iF6VLbbEYZC=s680-w680-h510-rw",
-    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk7RWveCNUXK2-7xtZLM-17jzaD9ghtz-6B-KtI8evjxRw2BAwmesIFiWmVk7dphxy70V7Ze3Z6JodxliBqRBPCzURRn6wdQNzgmIj-rDc8moM6e2jiZiUiLuRpz4Wb-8hGsUkHD_6Yl_s=s680-w680-h510-rw",
-    "https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk-lC3h0J8fSCtaGk5nLIHNAC6UdM2ULr2vdB_4SsO6YPwQGTAMlgT8PMKKR78MagcP_9amkZ6eT8rKVPYsNZntt699yoz1QbzaI3mgCm6H44gmVc874aIXyg3AqR14kU0Yq8vpkw=s680-w680-h510-rw",
     "https://lh3.googleusercontent.com/bp6YP0cgX2t01Ft8cdH2U8StozQtTdpywOsXrsaGaXdZ-yzPATUy8QHKEtzMpYrAn1_FRVbg-QwAftpguA=w1351",
     "https://lh3.googleusercontent.com/vnUETwcpdemTDFco0ggiO_SmKtkhPz3VIVFBu0VWKAWtxcgRKHJVkWU4TGHYGsw5HYUvWb24-ewDRknP0g=w1351",
     "https://lh3.googleusercontent.com/TOVEmybaj5bxloT-07aO_1nPHr1tzoyalot67gZdVa9AdGjSiyTFodIGIeFqbeHbjLcnEQZGbT4xxKhk7w=w1351",
@@ -32,17 +25,20 @@ interface HeroProps {
 
 const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
     const storeStatus = useStoreStatus();
+    const [images, setImages] = useState<string[]>(VALID_HERO_IMAGES);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [currentSubtitleIndex, setCurrentSubtitleIndex] = useState(0);
 
     const nextSlide = useCallback(() => {
+        if (images.length === 0) return;
         setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, []);
+    }, [images.length]);
 
     useEffect(() => {
+        if (images.length <= 1) return;
         const slideInterval = setInterval(nextSlide, 5000);
         return () => clearInterval(slideInterval);
-    }, [nextSlide]);
+    }, [nextSlide, images.length]);
     
     useEffect(() => {
         const subtitleInterval = setInterval(() => {
@@ -53,6 +49,13 @@ const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
 
     const goToSlide = (index: number) => {
         setCurrentIndex(index);
+    };
+
+    const handleImageError = (failedSrc: string) => {
+        setImages((prev) => {
+            const filtered = prev.filter((img) => img !== failedSrc);
+            return filtered.length > 0 ? filtered : prev;
+        });
     };
 
     const handleScrollToMenu = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -68,9 +71,10 @@ const Hero: React.FC<HeroProps> = ({ onOpenOrder }) => {
             <div className="absolute inset-0 z-0">
                 {images.map((src, index) => (
                      <img
-                        key={index}
+                        key={src}
                         src={src}
                         alt={`Tapioca saborosa ${index + 1}`}
+                        onError={() => handleImageError(src)}
                         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
                     />
                 ))}

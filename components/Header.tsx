@@ -110,6 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, allItems, onSearchResultSel
     const navLinks = [
         { href: '#home', label: 'Início' },
         { href: '#sobre', label: 'sobre nós' },
+        { href: '#galeria', label: 'Galeria' },
         { href: '#menu', label: 'Tapiocas' },
         { href: '#contato', label: 'contato' },
     ];

@@ -126,9 +126,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   // Selected items list & totals
   const selectedItemsList = useMemo(() => {
     return Object.entries(quantities)
-      .map(([idStr, qty]) => {
+      .map(([idStr, rawQty]) => {
         const id = parseInt(idStr, 10);
         const item = allItems.find((i) => i.id === id);
+        const qty = Number(rawQty);
         if (!item || qty <= 0) return null;
         const unitPrice = parsePrice(item.price);
         const subtotal = unitPrice * qty;

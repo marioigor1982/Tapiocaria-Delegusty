@@ -19,7 +19,7 @@ export const SALTY_TAPIOCAS: MenuItem[] = [
     id: 16,
     name: 'QUEIJO I',
     description: 'MUSSARELA E MANTEIGA.',
-    images: [{ url: 'https://i.postimg.cc/P5CkRNcQ/800-62365c6da6e6a.jpg', isMain: true }],
+    images: [{ url: 'https://lh3.googleusercontent.com/5HNzhKZEpzqIuPWVJ23X6Le6BZpW5kUX2fbvl11IPe4V4VD7EWyB1K6y3RL_l7gOb7jqGxC-EIiE2Q2RpQ=w1420', isMain: true }],
     price: 'R$ 10,00',
   },
   {
@@ -185,12 +185,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     name: 'BEIJINHO',
     description: 'COCO RALADO COM LEITE CONDENSADO.',
     images: [
-      { url: 'https://lh3.googleusercontent.com/gps-cs-s/AHRPTWnN6OqdVYUOmPQEB7f1_CAhM39QTtwrothWp58HsrRQcHU8kspvPjD3KBQtAH2riCzpVwJxFvG1gEJsTn9oxSLoOKQAw7C8DscrByzHSZtkDgoJ9lVaSZo-HQ_1LEJQTjc9PnmhTDGYfLDU=s680-w680-h510-rw', isMain: true },
-      { url: 'https://i.postimg.cc/cLNG8qQS/203262-original.jpg', isMain: false },
-      { url: 'https://xamegobom.com.br/wp-content/uploads/2017/02/tapioca-com-leite-condensado1.jpg', isMain: false },
-      { url: 'https://receitinhasdadani.com.br/wp-content/uploads/2022/07/Tapioca-com-leite-condensado-e-coco.jpg', isMain: false },
-      { url: 'https://i.pinimg.com/originals/9b/12/c0/9b12c0854bbb7768d434e766b33c0eb2.jpg', isMain: false },
-      { url: 'https://www.grupopq.com.br/wp-content/uploads/2021/02/Tapioca-coco-leitecondensado-1-1024x1024.jpg', isMain: false },
+      { url: 'https://i.postimg.cc/cLNG8qQS/203262-original.jpg', isMain: true },
     ],
     price: 'R$ 10,00',
   },
@@ -209,6 +204,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     description: 'COCO RALADO, CREME DE MORANGO E LEITE CONDENSADO.',
     images: [
       { url: 'https://lh3.googleusercontent.com/gps-cs-s/ANWiy9Tt26t_0teJ5Qr5G5dUvnk3ZrH18iqsTTGULDo1WNzYBdy3SCzyL_lecDpuh2KyIuZlnmdF_vO8YoqH-vzBPOl2OfxAC3dm1lioXoEZLQ_LHyhPm4ZLYY3F6W35QS0tDmh9w2afGO6jj64j=s680-w680-h510-rw', isMain: true },
+      { url: 'https://lh3.googleusercontent.com/xnFGidDgNfsY2X8F_0c_ySYqM9dVpYeGWm5z4-4trkJN3ThfjcDvORbR1AhnVXIVxH_95Wfv1bnP1R6Qbg=w1521', isMain: false },
     ],
     price: 'R$ 10,00',
   },
@@ -235,7 +231,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     name: 'ROMEU E JULIETA',
     description: 'MUSSARELA, COCO RALADO, GOIABADA LÍQUIDA E LEITE CONDENSADO.',
     images: [
-      { url: 'https://www.receitadevovo.com.br/_next/image?url=https://d2qcpt1idvpipw.cloudfront.net/recipes/2020/10/tapioca-com-queijo-e-goiabada.jpg&w=3840&q=75', isMain: true },
+      { url: 'https://lh3.googleusercontent.com/1Ly3QTjpmPpDoe9q3jJ7ZbgbfEx3bo2o5ObZLFnW0xqA3k77yPeV9wQCvj0G9wNNS6z-ekyPLFWmEUxy3A=w1420', isMain: true },
     ],
     price: 'R$ 12,00',
   },
@@ -292,12 +288,7 @@ export const SWEET_TAPIOCAS: MenuItem[] = [
     name: 'MORANGO COM NUTELLA',
     description: 'MORANGO FATIADO E NUTELLA.',
     images: [
-        { url: 'https://lh3.googleusercontent.com/gps-cs-s/AHRPTWke77AFUw6J6-3mlFwk1lvyR1v-RL4Cr3npgPi6FcuQeARrVPMxRuBSKYGM25ApI3LWGaEfJM9_R139wMfpBVWDHZGvP2hvzBq91oKvSjqQKoSICHeEW-4rUpTw93WR0J0ZoaT8Y2BvzPfp=s680-w680-h510-rw', isMain: true },
-        { url: 'https://cozidoeassado.com/wp-content/uploads/2023/08/tapioca-de-nutella-e-morango.webp', isMain: false },
-        { url: 'https://seguiareceita.com/wp-content/uploads/2024/01/Tapioca-de-Nutella-e-Morango-1024x457.jpg', isMain: false },
-        { url: 'https://media-cdn.tripadvisor.com/media/photo-o/10/3d/07/a8/tapioca-de-nutella-com.jpg', isMain: false },
-        { url: 'https://s3-sa-east-1.amazonaws.com/deliveryon-uploads/products/imperio/27_5c589940ab310.jpg', isMain: false },
-        { url: 'https://arcadasportofado.pt/receitas/wp-content/uploads/tapioca-de-nutella-com-morango.jpg', isMain: false },
+        { url: 'https://lh3.googleusercontent.com/oF0F5L_SnxmW--GOVnm9_8eNu9l7KpUJgu33KCLl5hTd3dkvtDdYFt1NkcR_bU2YMQYmJZReA_pjJxmisw=w1420', isMain: true },
     ],
     price: 'R$ 17,00',
   },
