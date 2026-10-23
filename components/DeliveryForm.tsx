@@ -330,7 +330,7 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
                 Valor do Frete (Cálculo Automático)
               </div>
               <div className="text-[11px] text-stone-500">
-                Taxa fixa de <strong>R$ 2,50 por km</strong> percorrido (inclusão manual desabilitada)
+                Taxa de <strong>R$ 2,50</strong> (até 1,99 km) e <strong>R$ 2,50/km</strong> a partir de 2 km
               </div>
             </div>
           </div>
@@ -350,7 +350,7 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
                 Distância: ~{data.distanceKm.toFixed(1).replace('.', ',')} km
               </span>
               <span className="bg-emerald-200 text-emerald-900 font-extrabold px-2 py-0.5 rounded text-[11px]">
-                {data.explanation || (data.distanceKm <= 1.0 ? `Até 1 km (taxa fixa mínima) = R$ 2,50` : `${data.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50 = R$ ${data.feeFormatted}`)}
+                {data.explanation || (data.distanceKm < 2.0 ? `Até 1,99 km (taxa fixa base) = R$ 2,50` : `${data.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50 = R$ ${data.feeFormatted}`)}
               </span>
             </div>
             <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md font-semibold">

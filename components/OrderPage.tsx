@@ -428,11 +428,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
                       <span>Nossa Entrega Própria (Delivery)</span>
                       <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
-                        R$ 2,50 por km
+                        R$ 2,50 base | R$ 2,50/km (&gt;= 2 km)
                       </span>
                     </h3>
                     <p className="text-xs text-stone-600">
-                      Digite o seu CEP (obrigatório), número e complemento. O frete é calculado automaticamente com base na distância de nossa loja (R$ 2,50/km).
+                      Digite seu CEP (obrigatório), número e complemento. De 0 a 1,99 km taxa fixa base de R$ 2,50; a partir de 2,0 km calcula a distância exata × R$ 2,50/km.
                     </p>
                   </div>
                 </div>

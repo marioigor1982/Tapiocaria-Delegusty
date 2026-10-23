@@ -1,6 +1,8 @@
 // Utility for calculating delivery distance and shipping fees based on store origin and customer address
 // Store: Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140
-// Rate: R$ 2,50 por KM (Mínimo de R$ 2,50 para até 1 km)
+// Rate:
+// - De 0 km até 1,99 km: Taxa fixa base de R$ 2,50 (equivalente a 1 km)
+// - A partir de 2,0 km: Distância real em km × R$ 2,50
 
 export const STORE_INFO = {
   name: 'Tapioca Delegusty',
@@ -15,14 +17,10 @@ export const STORE_INFO = {
     lat: -23.6667,
     lng: -46.7770,
   },
-  pricePerKm: 2.50, // R$ 2,50 por km
-  minimumFee: 2.50, // Taxa fixa mínima de R$ 2,50 até 1 km
+  pricePerKm: 2.50, // R$ 2,50 por km rodado
+  baseFee: 2.50, // Taxa fixa base de R$ 2,50 para até 1,99 km
   maxStandardRadiusKm: 15.0, // Raio padrão de 15 km
 };
-
-// Search boundary box for São Paulo (favors Zona Sul/Oeste/Grande SP near store)
-// minlon, maxlat, maxlon, minlat
-const SP_SOUTH_WEST_VIEWBOX = '-46.95,-23.45,-46.55,-23.85';
 
 export interface CepAddressData {
   cep: string;
@@ -37,8 +35,8 @@ export interface DeliveryCalculationResult {
   success: boolean;
   distanceKm: number;
   fee: number;
-  feeFormatted: string; // e.g. "2,50", "4,75" or "10,00"
-  explanation: string; // e.g. "1,9 km × R$ 2,50/km = R$ 4,75"
+  feeFormatted: string; // e.g. "2,50", "5,00" or "12,50"
+  explanation: string; // e.g. "3,3 km × R$ 2,50/km = R$ 8,25"
   isOverRadius: boolean; // true if distanceKm > 15 km
   resolvedAddress?: string;
   street?: string;
@@ -48,37 +46,6 @@ export interface DeliveryCalculationResult {
   source: 'driving_route' | 'haversine_estimate' | 'cep_estimate' | 'fallback';
   error?: string;
 }
-
-// Known approximate coordinates and max plausible radius (km) by CEP prefix around store
-const CEP_PREFIX_MAP: Record<string, { lat: number; lng: number; defaultKm: number; maxPlausibleKm: number }> = {
-  // Cohab Adventista / Loja local
-  '05868': { lat: -23.6667, lng: -46.7770, defaultKm: 0.5, maxPlausibleKm: 2.0 },
-  // Capão Redondo / Parque Fernanda / Cohab Adventista
-  '058': { lat: -23.6700, lng: -46.7800, defaultKm: 1.8, maxPlausibleKm: 6.0 },
-  // Campo Limpo / Jardim Ipê / Pirajussara (Vizinho imediato ao Capão Redondo!)
-  '05797': { lat: -23.6535, lng: -46.7742, defaultKm: 1.9, maxPlausibleKm: 5.0 },
-  '057': { lat: -23.6450, lng: -46.7650, defaultKm: 2.8, maxPlausibleKm: 7.0 },
-  // Vila Sônia / Morumbi
-  '056': { lat: -23.6020, lng: -46.7260, defaultKm: 6.5, maxPlausibleKm: 10.0 },
-  // Butantã / Raposo
-  '055': { lat: -23.5750, lng: -46.7280, defaultKm: 10.0, maxPlausibleKm: 15.0 },
-  // Taboão da Serra (divisa com Campo Limpo)
-  '067': { lat: -23.6260, lng: -46.7580, defaultKm: 5.0, maxPlausibleKm: 9.0 },
-  // Embu das Artes
-  '068': { lat: -23.6490, lng: -46.8520, defaultKm: 8.5, maxPlausibleKm: 13.0 },
-  // Itapecerica da Serra
-  '069': { lat: -23.7170, lng: -46.8490, defaultKm: 9.5, maxPlausibleKm: 15.0 },
-  // Jardim Ângela / M'Boi Mirim
-  '049': { lat: -23.6850, lng: -46.7550, defaultKm: 4.5, maxPlausibleKm: 8.5 },
-  // Socorro / Interlagos / Cidade Dutra
-  '048': { lat: -23.6950, lng: -46.7050, defaultKm: 7.5, maxPlausibleKm: 13.0 },
-  // Santo Amaro
-  '047': { lat: -23.6530, lng: -46.7050, defaultKm: 6.5, maxPlausibleKm: 10.0 },
-  // Campo Belo / Brooklin
-  '046': { lat: -23.6350, lng: -46.6750, defaultKm: 9.0, maxPlausibleKm: 13.0 },
-  // Moema / Itaim Bibi
-  '045': { lat: -23.5950, lng: -46.6750, defaultKm: 11.0, maxPlausibleKm: 16.0 },
-};
 
 // Haversine formula (straight-line distance between two coordinates in km)
 export const calculateHaversineDistanceKm = (
@@ -112,7 +79,9 @@ export const formatCepString = (raw: string): string => {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
 
-// Look up address details via CEP (ViaCEP with BrasilAPI fallback)
+/**
+ * 1. Fetch address details via CEP (ViaCEP with BrasilAPI fallback)
+ */
 export const fetchAddressByCep = async (rawCep: string): Promise<CepAddressData | null> => {
   const clean = rawCep.replace(/\D/g, '');
   if (clean.length !== 8) return null;
@@ -184,64 +153,96 @@ export const fetchAddressByCep = async (rawCep: string): Promise<CepAddressData 
   return null;
 };
 
-// Geocode query string to { lat, lng } using Nominatim OpenStreetMap with viewbox bias
-export const geocodeAddress = async (
-  query: string,
-  useViewbox = true
+/**
+ * 2. Geocode address query to { lat, lng } using Photon (Komoot) with OSM/Nominatim fallback
+ * Photon supports full CORS in browsers and biases results directly to store origin coordinates.
+ */
+export const geocodeAddressReal = async (
+  query: string
 ): Promise<{ lat: number; lng: number; displayName: string } | null> => {
+  const cleanQuery = query.trim();
+  if (!cleanQuery) return null;
+
+  const store = STORE_INFO.coordinates;
+
+  // Attempt A: Photon Geocoding (CORS-friendly, OpenStreetMap based, biased to store lat/lng)
   try {
-    const cleanQuery = query.trim();
-    if (!cleanQuery) return null;
-
-    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      cleanQuery
-    )}&limit=1&countrycodes=br`;
-
-    if (useViewbox) {
-      url += `&viewbox=${SP_SOUTH_WEST_VIEWBOX}`;
-    }
-
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 4500);
+    const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(
+      cleanQuery
+    )}&lat=${store.lat}&lon=${store.lng}&limit=2`;
 
-    const resp = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'TapiocaApp/1.0',
-      },
-    });
+    const resp = await fetch(photonUrl, { signal: controller.signal });
     clearTimeout(timeout);
 
-    if (!resp.ok) return null;
-    const list = await resp.json();
-    if (!Array.isArray(list) || list.length === 0) return null;
-
-    const first = list[0];
-    const lat = parseFloat(first.lat);
-    const lng = parseFloat(first.lon);
-
-    if (isNaN(lat) || isNaN(lng)) return null;
-
-    return {
-      lat,
-      lng,
-      displayName: first.display_name,
-    };
+    if (resp.ok) {
+      const data = await resp.json();
+      const feature = data.features?.[0];
+      if (feature && feature.geometry && Array.isArray(feature.geometry.coordinates)) {
+        const [lon, lat] = feature.geometry.coordinates;
+        if (!isNaN(lat) && !isNaN(lon)) {
+          const props = feature.properties || {};
+          const name = [props.name || props.street, props.district || props.city, props.state]
+            .filter(Boolean)
+            .join(', ');
+          return {
+            lat: parseFloat(lat),
+            lng: parseFloat(lon),
+            displayName: name || cleanQuery,
+          };
+        }
+      }
+    }
   } catch (err) {
-    console.warn('Geocoding error:', err);
-    return null;
+    console.warn('Photon geocoding error, falling back:', err);
   }
+
+  // Attempt B: Nominatim with South-West São Paulo viewbox
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const spViewbox = '-46.95,-23.45,-46.55,-23.85';
+    const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      cleanQuery + ', São Paulo'
+    )}&viewbox=${spViewbox}&limit=1`;
+
+    const resp = await fetch(nomUrl, { signal: controller.signal });
+    clearTimeout(timeout);
+
+    if (resp.ok) {
+      const list = await resp.json();
+      if (Array.isArray(list) && list.length > 0) {
+        const first = list[0];
+        const lat = parseFloat(first.lat);
+        const lng = parseFloat(first.lon);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return {
+            lat,
+            lng,
+            displayName: first.display_name,
+          };
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Nominatim geocoding error:', err);
+  }
+
+  return null;
 };
 
-// Query real driving route distance in km using OSRM
+/**
+ * 3. Query real driving route distance in km using OSRM
+ * Returns real road driving distance (not straight line)
+ */
 export const getDrivingRouteDistanceKm = async (
   lat: number,
   lng: number
 ): Promise<number | null> => {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
+    const timeout = setTimeout(() => controller.abort(), 4500);
 
     const store = STORE_INFO.coordinates;
     const url = `https://router.project-osrm.org/route/v1/driving/${store.lng},${store.lat};${lng},${lat}?overview=false`;
@@ -249,13 +250,13 @@ export const getDrivingRouteDistanceKm = async (
     const resp = await fetch(url, { signal: controller.signal });
     clearTimeout(timeout);
 
-    if (!resp.ok) return null;
-    const data = await resp.json();
-
-    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-      const distanceMeters = data.routes[0].distance;
-      if (typeof distanceMeters === 'number' && distanceMeters > 0) {
-        return parseFloat((distanceMeters / 1000).toFixed(1));
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const distanceMeters = data.routes[0].distance;
+        if (typeof distanceMeters === 'number' && distanceMeters > 0) {
+          return parseFloat((distanceMeters / 1000).toFixed(1));
+        }
       }
     }
     return null;
@@ -266,11 +267,15 @@ export const getDrivingRouteDistanceKm = async (
 };
 
 /**
- * Calculates delivery fee given a mandatory CEP plus optional number and complement
- * Rate rule:
- * - 0,01 km até 1,0 km: R$ 2,50 (taxa fixa mínima por km)
- * - Acima de 1,1 km em diante: distância em km × R$ 2,50
- * - Distância > 15 km: ativa aviso de confirmação
+ * Calculates delivery fee based on customer's CEP and address
+ *
+ * Business Rules:
+ * 1. Origin: 05868-140 (Travessa Casca Preciosa, 54 - Cohab Adventista)
+ * 2. Distance: Real driving distance from origin to customer address
+ * 3. Pricing:
+ *    - De 0 km até 1,99 km: Taxa fixa base de R$ 2,50 (equivalente a 1 km)
+ *    - A partir de 2,0 km: Distância real exata × R$ 2,50
+ *    - Se distância > 15 km: Alerta de confirmação
  */
 export const calculateDeliveryByCep = async (
   rawCep: string,
@@ -310,74 +315,44 @@ export const calculateDeliveryByCep = async (
   ].filter(Boolean);
   const resolvedAddress = fullAddressParts.join(', ');
 
-  // 2. Identify CEP prefix zone parameters to prevent false-positive far-away namesake geocodes
-  let matchedZone: { lat: number; lng: number; defaultKm: number; maxPlausibleKm: number } | null = null;
-  for (const [prefix, zone] of Object.entries(CEP_PREFIX_MAP)) {
-    if (cleanCep.startsWith(prefix)) {
-      matchedZone = zone;
-      break;
-    }
-  }
-
-  // 3. Geocode destination address
-  // CRITICAL FIX: Do NOT include neighborhood in Nominatim search if street is present!
-  // In OSM, OpenStreetMap neighborhoods often differ from Correios (e.g. "Capão Redondo" vs "Jardim Ipê"),
-  // which causes 0 results or false hits 60 km away in Vila Curuçá!
+  // 2. Geocode destination address
   let geo: { lat: number; lng: number; displayName: string } | null = null;
 
+  // Attempt 1: Search by street name + city
   if (street) {
-    // Attempt 1: Street + City + South-West Viewbox
-    geo = await geocodeAddress(`${street}, São Paulo, Brasil`, true);
+    const streetQuery = `${street}, ${city}`;
+    geo = await geocodeAddressReal(streetQuery);
 
-    // Attempt 2: Strip street type (e.g. "Rua", "Avenida", "Travessa") + City
+    // If not found, try without street prefix (e.g. "Rua João Florêncio" -> "João Florêncio")
     if (!geo) {
-      const cleanStreetName = street.replace(
+      const cleanStreet = street.replace(
         /^(rua|avenida|travessa|alameda|estrada|rodovia|praça|r\.|av\.|tv\.)\s+/i,
         ''
       );
-      if (cleanStreetName !== street) {
-        geo = await geocodeAddress(`${cleanStreetName}, São Paulo, Brasil`, true);
+      if (cleanStreet !== street) {
+        geo = await geocodeAddressReal(`${cleanStreet}, ${city}`);
       }
     }
   }
 
-  // Sanity check candidate coordinates against CEP zone if matched
-  if (geo && matchedZone) {
-    const straightKm = calculateHaversineDistanceKm(
-      STORE_INFO.coordinates.lat,
-      STORE_INFO.coordinates.lng,
-      geo.lat,
-      geo.lng
-    );
-    // If the geocoded point is impossibly far from what this CEP prefix allows, reject false namesake
-    if (straightKm > matchedZone.maxPlausibleKm) {
-      console.warn(
-        `Geocode rejected for CEP ${cleanCep}: candidate ${geo.displayName} was ${straightKm.toFixed(1)} km away, max plausible is ${matchedZone.maxPlausibleKm} km`
-      );
-      geo = null;
-    }
-  }
-
-  // Attempt 3: If street geocoding failed or was rejected, use matched zone coordinates directly
-  if (!geo && matchedZone) {
-    geo = {
-      lat: matchedZone.lat,
-      lng: matchedZone.lng,
-      displayName: `Região CEP ${cleanCep.slice(0, 5)} - ${neighborhood || city}`,
-    };
-  }
-
-  // Attempt 4: If still not found and we have a neighborhood
+  // Attempt 2: If street not found, search by neighborhood + city
   if (!geo && neighborhood) {
-    geo = await geocodeAddress(`${neighborhood}, Zona Sul, São Paulo, Brasil`, true);
+    geo = await geocodeAddressReal(`${neighborhood}, ${city}`);
   }
 
-  // 4. Distance and Fee calculation
-  if (geo) {
-    let finalDistanceKm: number | null = await getDrivingRouteDistanceKm(geo.lat, geo.lng);
-    let source: DeliveryCalculationResult['source'] = 'driving_route';
+  // Attempt 3: If still not found, search with CEP formatted
+  if (!geo) {
+    geo = await geocodeAddressReal(`CEP ${formattedCep}, ${city}`);
+  }
 
-    // Fallback to calibrated Haversine if driving service was unreachable
+  // 3. Compute real distance via OSRM driving route or calibrated road Haversine
+  let finalDistanceKm: number | null = null;
+  let source: DeliveryCalculationResult['source'] = 'driving_route';
+
+  if (geo) {
+    finalDistanceKm = await getDrivingRouteDistanceKm(geo.lat, geo.lng);
+
+    // Fallback to calibrated Haversine if OSRM was temporarily unreachable
     if (finalDistanceKm === null || finalDistanceKm <= 0) {
       const straightLineKm = calculateHaversineDistanceKm(
         STORE_INFO.coordinates.lat,
@@ -385,92 +360,65 @@ export const calculateDeliveryByCep = async (
         geo.lat,
         geo.lng
       );
+      // City driving distance in SP is ~35% longer than straight line
       finalDistanceKm = parseFloat(Math.max(0.1, straightLineKm * 1.35).toFixed(1));
       source = 'haversine_estimate';
     }
+  }
 
-    const distanceKm = Math.max(0.1, finalDistanceKm);
-    const distStr = distanceKm.toFixed(1).replace('.', ',');
-
-    // Regra oficial do cliente:
-    // De 0,01 km até 1,0 km: taxa fixa de R$ 2,50 (não pode ser R$ 1,25 ou menor que R$ 2,50)
-    // Passando de 1,1 km em diante: o sistema calcula distância × R$ 2,50
-    let fee: number;
-    let feeFormatted: string;
-    let explanation: string;
-
-    if (distanceKm <= 1.0) {
-      fee = 2.50;
-      feeFormatted = formatDecimalFee(fee);
-      explanation = `${distStr} km (taxa fixa mínima de até 1 km) = R$ ${feeFormatted}`;
+  // Fallback 4: If no geocode was possible, estimate by geographic CEP prefix
+  if (finalDistanceKm === null || finalDistanceKm <= 0) {
+    source = 'cep_estimate';
+    const prefix5 = cleanCep.slice(0, 5);
+    if (prefix5.startsWith('05868')) {
+      finalDistanceKm = 0.5; // Loja / Cohab Adventista
+    } else if (prefix5.startsWith('058')) {
+      finalDistanceKm = 1.8; // Capão Redondo
+    } else if (prefix5.startsWith('057')) {
+      finalDistanceKm = 3.2; // Campo Limpo
+    } else if (prefix5.startsWith('049')) {
+      finalDistanceKm = 4.0; // Jardim Ângela
+    } else if (prefix5.startsWith('067')) {
+      finalDistanceKm = 5.5; // Taboão da Serra
+    } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
+      finalDistanceKm = 7.5; // Santo Amaro / Socorro
+    } else if (prefix5.startsWith('068')) {
+      finalDistanceKm = 8.5; // Embu das Artes
+    } else if (prefix5.startsWith('056')) {
+      finalDistanceKm = 6.5; // Morumbi
     } else {
-      const rawFee = distanceKm * STORE_INFO.pricePerKm;
-      fee = parseFloat(rawFee.toFixed(2));
-      feeFormatted = formatDecimalFee(fee);
-      explanation = `${distStr} km × R$ 2,50/km = R$ ${feeFormatted}`;
+      finalDistanceKm = 18.0; // Centro / Outras zonas (> 15 km)
     }
-
-    const isOverRadius = distanceKm > STORE_INFO.maxStandardRadiusKm;
-
-    return {
-      success: true,
-      distanceKm,
-      fee,
-      feeFormatted,
-      explanation,
-      isOverRadius,
-      resolvedAddress,
-      street,
-      neighborhood,
-      city,
-      state,
-      source,
-    };
   }
 
-  // 5. Fallback estimation by CEP prefix if all services fail
-  const prefix5 = cleanCep.slice(0, 5);
-  let estimatedKm = 2.5;
+  const distanceKm = Math.max(0.1, finalDistanceKm);
+  const distStr = distanceKm.toFixed(1).replace('.', ',');
 
-  if (prefix5.startsWith('05868')) {
-    estimatedKm = 0.5; // Cohab Adventista local
-  } else if (prefix5.startsWith('058')) {
-    estimatedKm = 1.8; // Capão Redondo local
-  } else if (prefix5.startsWith('057')) {
-    estimatedKm = 2.8; // Campo Limpo / Jardim Ipê
-  } else if (prefix5.startsWith('049')) {
-    estimatedKm = 4.5; // Jardim Ângela
-  } else if (prefix5.startsWith('067')) {
-    estimatedKm = 5.0; // Taboão da Serra
-  } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
-    estimatedKm = 7.0; // Santo Amaro / Socorro
-  } else if (prefix5.startsWith('068')) {
-    estimatedKm = 8.5; // Embu das Artes
-  } else if (prefix5.startsWith('01') || prefix5.startsWith('02') || prefix5.startsWith('03')) {
-    estimatedKm = 18.0; // Centro / Zona Norte / Zona Leste (> 15 km)
-  }
-
+  // ==========================================
+  // Regra Oficial de Cobrança do Negócio:
+  // - De 0 km até 1,99 km: Taxa fixa base de R$ 2,50 (equivalente a 1 km)
+  // - A partir de 2,0 km: Distância real exata × R$ 2,50
+  // ==========================================
   let fee: number;
   let feeFormatted: string;
   let explanation: string;
-  const distStr = estimatedKm.toFixed(1).replace('.', ',');
 
-  if (estimatedKm <= 1.0) {
-    fee = 2.50;
+  if (distanceKm < 2.0) {
+    fee = STORE_INFO.baseFee; // R$ 2,50 fixo
     feeFormatted = formatDecimalFee(fee);
-    explanation = `~${distStr} km (taxa fixa mínima de até 1 km) = R$ ${feeFormatted}`;
+    explanation = `${distStr} km (taxa fixa base de até 1,99 km) = R$ ${feeFormatted}`;
   } else {
-    const rawFee = estimatedKm * STORE_INFO.pricePerKm;
+    const rawFee = distanceKm * STORE_INFO.pricePerKm;
     fee = parseFloat(rawFee.toFixed(2));
     feeFormatted = formatDecimalFee(fee);
-    explanation = `~${distStr} km (estimado) × R$ 2,50/km = R$ ${feeFormatted}`;
+    explanation = `${distStr} km × R$ 2,50/km = R$ ${feeFormatted}`;
   }
 
-  const isOverRadius = estimatedKm > STORE_INFO.maxStandardRadiusKm;
+  const isOverRadius = distanceKm > STORE_INFO.maxStandardRadiusKm;
 
   return {
     success: true,
-    distanceKm: estimatedKm,
+    distanceKm,
     fee,
     feeFormatted,
     explanation,
@@ -480,7 +428,7 @@ export const calculateDeliveryByCep = async (
     neighborhood,
     city,
     state,
-    source: 'cep_estimate',
+    source,
   };
 };
 
