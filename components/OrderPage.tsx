@@ -8,7 +8,6 @@ import ThermalReceiptModal from './ThermalReceiptModal';
 import { useStoreStatus } from '../hooks/useStoreStatus';
 import { STORE_INFO } from '../utils/deliveryCalculator';
 import DeliveryForm, { type DeliveryAddressData } from './DeliveryForm';
-import RadiusConfirmationModal from './RadiusConfirmationModal';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -93,15 +92,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     neighborhood: '',
     city: 'São Paulo',
     state: 'SP',
-    distanceKm: 0,
     fee: 0,
-    feeFormatted: '0,00',
-    explanation: '',
-    isOverRadius: false,
-    confirmedOverRadius: false,
+    feeInput: '',
     fullAddress: '',
   });
-  const [showRadiusModal, setShowRadiusModal] = useState(false);
 
   const handleDeliveryDataChange = (updated: Partial<DeliveryAddressData>) => {
     setDeliveryData((prev) => ({ ...prev, ...updated }));
@@ -206,20 +200,8 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     const isDelivery = orderType === 'delivery';
 
     if (isDelivery) {
-      const cleanCep = deliveryData.cep.replace(/\D/g, '');
-      if (cleanCep.length !== 8) {
-        alert('Por favor, preencha o CEP de entrega (obrigatório com 8 dígitos) para calcularmos o frete.');
-        return;
-      }
-
       if (!deliveryData.number.trim()) {
-        alert('Por favor, informe o número da residência/comércio para a entrega (obrigatório).');
-        return;
-      }
-
-      // Se a distância for maior que 15 km e o cliente ainda não confirmou
-      if (deliveryData.isOverRadius && !deliveryData.confirmedOverRadius) {
-        setShowRadiusModal(true);
+        alert('Por favor, informe ao menos o número da residência/comércio para a entrega (obrigatório).');
         return;
       }
     }
@@ -238,25 +220,21 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
     if (isDelivery) {
       message += `🛵 *MODALIDADE:* Entrega Própria (Delivery)\n`;
-      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A calcular pelo CEP'}\n`;
-      if (deliveryData.distanceKm > 0) {
-        message += `📏 *Cálculo do Frete:* ${deliveryData.explanation || `~${deliveryData.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50/km = R$ ${deliveryData.feeFormatted}`}\n`;
-      }
-      if (deliveryData.isOverRadius) {
-        message += `⚠️ *Aviso de Raio Estendido (>15 km):* Cliente confirmou ciência da distância (~${deliveryData.distanceKm.toFixed(1).replace('.', ',')} km).\n`;
-      }
-      message += `💰 *VALOR TOTAL COM FRETE:* ${formatPrice(grandTotalPrice)}\n`;
+      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar com a loja via WhatsApp'}\n`;
+      message += `💰 *VALOR TOTAL:* ${deliveryFee > 0 ? formatPrice(grandTotalPrice) : `${formatPrice(subtotalProducts)} (+ frete a combinar)`}\n`;
       
       const finalAddress = deliveryData.fullAddress || [
-        deliveryData.street ? `${deliveryData.street}, Nº ${deliveryData.number}` : `Nº ${deliveryData.number}`,
+        deliveryData.street ? `${deliveryData.street}, Nº ${deliveryData.number}` : (deliveryData.number ? `Nº ${deliveryData.number}` : ''),
         deliveryData.complement,
         deliveryData.neighborhood,
         `${deliveryData.city} - ${deliveryData.state}`,
-        `CEP ${deliveryData.cep}`,
+        deliveryData.cep ? `CEP ${deliveryData.cep}` : '',
       ].filter(Boolean).join(', ');
 
-      message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
-      message += `🗺️ *Rota no Google Maps:* https://www.google.com/maps/dir/?api=1&origin=05868-140&destination=${encodeURIComponent(finalAddress || deliveryData.cep)}&travelmode=driving\n`;
+      if (finalAddress) {
+        message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
+      }
+      message += `🗺️ *Ver Rota no Google Maps:* https://www.google.com/maps/dir/?api=1&origin=05868-140&destination=${encodeURIComponent(finalAddress || deliveryData.cep || 'São Paulo, SP')}&travelmode=driving\n`;
     } else {
       message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
       message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
@@ -428,11 +406,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
                       <span>Nossa Entrega Própria (Delivery)</span>
                       <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
-                        R$ 2,50 base | R$ 2,50/km (&gt;= 2 km)
+                        Valor a Combinar / Rota no Maps
                       </span>
                     </h3>
                     <p className="text-xs text-stone-600">
-                      Digite seu CEP (obrigatório), número e complemento. De 0 a 1,99 km taxa fixa base de R$ 2,50; a partir de 2,0 km calcula a distância exata × R$ 2,50/km.
+                      Informe seu CEP, número e complemento. Você pode abrir o Google Maps para ver a rota e combinar a taxa diretamente pelo WhatsApp!
                     </p>
                   </div>
                 </div>
@@ -910,7 +888,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <div className="flex items-center justify-between text-xs pb-1 border-b border-orange-200">
                       <span className="font-bold text-orange-900">🛵 Entrega Própria</span>
                       <span className="text-[10px] bg-orange-200 text-orange-950 font-bold px-2 py-0.5 rounded-full">
-                        R$ 2,50/km
+                        A combinar / Maps
                       </span>
                     </div>
 
@@ -1067,26 +1045,6 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           orderType={orderType}
           deliveryFee={deliveryFee}
           deliveryAddress={deliveryData.fullAddress}
-        />
-
-        {/* Modal de Confirmação de Raio > 15 km */}
-        <RadiusConfirmationModal
-          isOpen={showRadiusModal}
-          distanceKm={deliveryData.distanceKm}
-          feeFormatted={deliveryData.feeFormatted}
-          onConfirm={() => {
-            setDeliveryData((prev) => ({ ...prev, confirmedOverRadius: true }));
-            setShowRadiusModal(false);
-            // Trigger order after confirmation
-            setTimeout(() => {
-              handleSendWhatsApp();
-            }, 100);
-          }}
-          onCancelPickup={() => {
-            setOrderType('pickup');
-            setShowRadiusModal(false);
-          }}
-          onClose={() => setShowRadiusModal(false)}
         />
       </div>
     </div>

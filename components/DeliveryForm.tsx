@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import {
-  calculateDeliveryByCep,
+  fetchAddressByCep,
   formatCepString,
   getGoogleMapsRouteUrl,
   STORE_INFO,
-  type DeliveryCalculationResult,
 } from '../utils/deliveryCalculator';
 
 export interface DeliveryAddressData {
@@ -15,12 +14,8 @@ export interface DeliveryAddressData {
   neighborhood: string;
   city: string;
   state: string;
-  distanceKm: number;
   fee: number;
-  feeFormatted: string;
-  explanation: string;
-  isOverRadius: boolean;
-  confirmedOverRadius: boolean;
+  feeInput: string;
   fullAddress: string;
 }
 
@@ -31,6 +26,14 @@ interface DeliveryFormProps {
   compact?: boolean;
 }
 
+// Utility to parse typed shipping fee (e.g. "5,00" or "7.5" -> 5 or 7.5)
+export const parseManualFee = (feeStr: string): number => {
+  if (!feeStr) return 0;
+  const cleaned = feeStr.replace('R$', '').replace(/\s/g, '').replace(',', '.');
+  const val = parseFloat(cleaned);
+  return isNaN(val) || val < 0 ? 0 : parseFloat(val.toFixed(2));
+};
+
 export const DeliveryForm: React.FC<DeliveryFormProps> = ({
   data,
   onChange,
@@ -38,54 +41,40 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
   compact = false,
 }) => {
   const [isSearchingCep, setIsSearchingCep] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
 
-  // Opens Google Maps directions in new tab from store origin (05868-140) to client destination
+  // Opens Google Maps directions in a new tab from store origin (05868-140) to client destination
   const handleOpenGoogleMapsRoute = () => {
     const clean = data.cep.replace(/\D/g, '');
-    if (clean.length !== 8) {
-      setSearchError('Por favor, digite um CEP válido com 8 dígitos para ver a rota no Maps.');
-      return;
-    }
     const dest =
       data.fullAddress ||
       (data.street
-        ? `${data.street}, ${data.number || ''}, São Paulo - SP, CEP ${data.cep}`
-        : data.cep);
-    const mapsUrl = getGoogleMapsRouteUrl(data.cep, dest);
+        ? `${data.street}, ${data.number || ''}, ${data.neighborhood || ''}, São Paulo - SP`
+        : data.cep || 'São Paulo, SP');
+
+    const mapsUrl = getGoogleMapsRouteUrl(clean || data.cep, dest);
     window.open(mapsUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // Helper to trigger calculation by CEP + number + complement
-  const triggerCalculation = async (
-    targetCep: string,
-    targetNumber = data.number,
-    targetComplement = data.complement
-  ) => {
-    const clean = targetCep.replace(/\D/g, '');
+  // Helper to fetch address via ViaCEP for convenience
+  const handleLookupCep = async (rawCep: string) => {
+    const clean = rawCep.replace(/\D/g, '');
     if (clean.length !== 8) {
-      setSearchError('Digite os 8 dígitos do CEP.');
+      setSearchFeedback('Digite os 8 dígitos do CEP.');
       return;
     }
 
     setIsSearchingCep(true);
-    setSearchError(null);
+    setSearchFeedback(null);
 
     try {
-      const res: DeliveryCalculationResult = await calculateDeliveryByCep(
-        clean,
-        targetNumber,
-        targetComplement
-      );
-
-      if (res.success) {
+      const res = await fetchAddressByCep(clean);
+      if (res) {
         const fullAddr = [
-          (res.street || data.street)
-            ? `${res.street || data.street}${targetNumber ? ', Nº ' + targetNumber : ''}`
-            : (targetNumber ? `Nº ${targetNumber}` : ''),
-          targetComplement ? targetComplement.trim() : '',
-          res.neighborhood || data.neighborhood,
-          `${res.city || data.city || 'São Paulo'} - ${res.state || data.state || 'SP'}`,
+          res.street ? `${res.street}${data.number ? ', Nº ' + data.number : ''}` : (data.number ? `Nº ${data.number}` : ''),
+          data.complement ? data.complement.trim() : '',
+          res.neighborhood,
+          `${res.city || 'São Paulo'} - ${res.state || 'SP'}`,
           `CEP ${formatCepString(clean)}`,
         ]
           .filter(Boolean)
@@ -97,21 +86,14 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
           neighborhood: res.neighborhood || data.neighborhood,
           city: res.city || data.city || 'São Paulo',
           state: res.state || data.state || 'SP',
-          distanceKm: res.distanceKm,
-          fee: res.fee,
-          feeFormatted: res.feeFormatted,
-          explanation: res.explanation,
-          isOverRadius: res.isOverRadius,
-          // Reset confirmation if CEP changed to >15km
-          confirmedOverRadius: res.isOverRadius ? data.confirmedOverRadius : false,
           fullAddress: fullAddr,
         });
+        setSearchFeedback('✓ Endereço preenchido com sucesso!');
       } else {
-        setSearchError(res.error || 'CEP não localizado. Por favor, verifique.');
+        setSearchFeedback('CEP não localizado automaticamente. Por favor, digite o endereço manualmente.');
       }
-    } catch (err) {
-      console.warn('Erro ao buscar CEP:', err);
-      setSearchError('Erro de conexão ao buscar CEP. Tente novamente.');
+    } catch {
+      setSearchFeedback('Não foi possível consultar o CEP no momento. Você pode preencher manualmente.');
     } finally {
       setIsSearchingCep(false);
     }
@@ -123,99 +105,61 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
     onChange({ cep: formatted });
 
     if (clean.length === 8) {
-      triggerCalculation(formatted);
+      handleLookupCep(formatted);
     }
   };
 
-  const handleNumberChange = (newNumber: string) => {
+  const updateFullAddress = (overrides: Partial<DeliveryAddressData>) => {
+    const current = { ...data, ...overrides };
     const fullAddr = [
-      data.street ? `${data.street}, Nº ${newNumber}` : (newNumber ? `Nº ${newNumber}` : ''),
-      data.complement ? data.complement.trim() : '',
-      data.neighborhood,
-      `${data.city || 'São Paulo'} - ${data.state || 'SP'}`,
-      data.cep ? `CEP ${data.cep}` : '',
+      current.street ? `${current.street}${current.number ? ', Nº ' + current.number : ''}` : (current.number ? `Nº ${current.number}` : ''),
+      current.complement ? current.complement.trim() : '',
+      current.neighborhood,
+      `${current.city || 'São Paulo'} - ${current.state || 'SP'}`,
+      current.cep ? `CEP ${current.cep}` : '',
     ]
       .filter(Boolean)
       .join(', ');
 
     onChange({
-      number: newNumber,
+      ...overrides,
       fullAddress: fullAddr,
     });
   };
 
-  const handleComplementChange = (newComplement: string) => {
-    const fullAddr = [
-      data.street ? `${data.street}, Nº ${data.number}` : (data.number ? `Nº ${data.number}` : ''),
-      newComplement ? newComplement.trim() : '',
-      data.neighborhood,
-      `${data.city || 'São Paulo'} - ${data.state || 'SP'}`,
-      data.cep ? `CEP ${data.cep}` : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-
+  const handleFeeInputChange = (val: string) => {
+    const num = parseManualFee(val);
     onChange({
-      complement: newComplement,
-      fullAddress: fullAddr,
-    });
-  };
-
-  const handleStreetChange = (newStreet: string) => {
-    const fullAddr = [
-      newStreet ? `${newStreet}, Nº ${data.number}` : (data.number ? `Nº ${data.number}` : ''),
-      data.complement ? data.complement.trim() : '',
-      data.neighborhood,
-      `${data.city || 'São Paulo'} - ${data.state || 'SP'}`,
-      data.cep ? `CEP ${data.cep}` : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    onChange({
-      street: newStreet,
-      fullAddress: fullAddr,
-    });
-  };
-
-  const handleNeighborhoodChange = (newNeighborhood: string) => {
-    const fullAddr = [
-      data.street ? `${data.street}, Nº ${data.number}` : (data.number ? `Nº ${data.number}` : ''),
-      data.complement ? data.complement.trim() : '',
-      newNeighborhood,
-      `${data.city || 'São Paulo'} - ${data.state || 'SP'}`,
-      data.cep ? `CEP ${data.cep}` : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-
-    onChange({
-      neighborhood: newNeighborhood,
-      fullAddress: fullAddr,
+      feeInput: val,
+      fee: num,
     });
   };
 
   return (
     <div className={`space-y-3.5 ${compact ? 'text-xs' : ''}`}>
-      {/* Header store origin note */}
+      {/* Informações da Loja */}
       <div className="bg-white/80 p-2.5 rounded-xl border border-orange-200 flex items-center justify-between gap-2 text-xs text-stone-700">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-base flex-shrink-0">📍</span>
           <span className="truncate">
-            <strong>Origem da Loja:</strong> {STORE_INFO.address} (CEP {STORE_INFO.cep})
+            <strong>Partida da Loja:</strong> {STORE_INFO.address} (CEP {STORE_INFO.cep})
           </span>
         </div>
-        <span className="bg-orange-600 text-white font-black px-2 py-0.5 rounded-md text-[11px] flex-shrink-0 shadow-xs">
-          R$ 2,50/km
-        </span>
+        <button
+          type="button"
+          onClick={onSwitchToPickup}
+          className="text-[11px] text-orange-700 font-bold hover:underline cursor-pointer whitespace-nowrap"
+        >
+          Mudar p/ Retirada
+        </button>
       </div>
 
-      {/* Inputs Section */}
+      {/* Seção de Endereço do Cliente */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        {/* CEP (Obrigatório) */}
+        {/* CEP com preenchimento automático */}
         <div className="sm:col-span-5 space-y-1">
           <label className="block font-bold text-stone-800 text-xs flex items-center justify-between">
-            <span>CEP do Destino <span className="text-red-500">* (Obrigatório)</span>:</span>
+            <span>CEP de Entrega:</span>
             {isSearchingCep && <span className="text-orange-600 font-normal text-[11px]">Buscando...</span>}
           </label>
           <div className="flex gap-1.5">
@@ -226,240 +170,167 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
               maxLength={9}
               value={data.cep}
               onChange={handleCepChange}
-              onBlur={() => {
-                if (data.cep.replace(/\D/g, '').length === 8 && !data.distanceKm) {
-                  triggerCalculation(data.cep);
-                }
-              }}
               className="flex-1 px-3 py-2 text-sm font-bold bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 tracking-wider shadow-inner"
             />
             <button
               type="button"
-              onClick={() => triggerCalculation(data.cep)}
+              onClick={() => handleLookupCep(data.cep)}
               disabled={isSearchingCep || data.cep.replace(/\D/g, '').length !== 8}
               className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-xs transition-all cursor-pointer ${
                 isSearchingCep
                   ? 'bg-orange-300 text-white cursor-wait'
                   : data.cep.replace(/\D/g, '').length !== 8
                   ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                  : 'bg-orange-600 hover:bg-orange-700 text-white hover:scale-[1.02]'
+                  : 'bg-orange-600 hover:bg-orange-700 text-white'
               }`}
-              title="Calcular automaticamente a rota e o frete"
+              title="Buscar rua pelo CEP"
             >
-              {isSearchingCep ? '⏳' : '⚡ Buscar'}
+              {isSearchingCep ? '⏳' : 'Buscar'}
             </button>
           </div>
         </div>
 
-        {/* Número (Obrigatório, manual) */}
+        {/* Número da Residência */}
         <div className="sm:col-span-3 space-y-1">
           <label className="block font-bold text-stone-800 text-xs">
-            Número <span className="text-red-500">* (Obrigatório)</span>:
+            Número <span className="text-red-500">*</span>:
           </label>
           <input
             type="text"
             placeholder="Ex: 123"
             value={data.number}
-            onChange={(e) => handleNumberChange(e.target.value)}
+            onChange={(e) => updateFullAddress({ number: e.target.value })}
             className="w-full px-3 py-2 text-sm font-semibold bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
           />
         </div>
 
-        {/* Complemento (Opcional, manual) */}
+        {/* Complemento */}
         <div className="sm:col-span-4 space-y-1">
           <label className="block font-bold text-stone-800 text-xs">
             Complemento <span className="text-stone-400 font-normal">(Opcional)</span>:
           </label>
           <input
             type="text"
-            placeholder="Ex: Apto 42, Bloco B, Casa 2"
+            placeholder="Ex: Apto 42, Bloco B"
             value={data.complement}
-            onChange={(e) => handleComplementChange(e.target.value)}
+            onChange={(e) => updateFullAddress({ complement: e.target.value })}
             className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
           />
         </div>
       </div>
 
-      {/* Street and Neighborhood (auto-filled from CEP) */}
+      {/* Rua e Bairro */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
         <div className="sm:col-span-7 space-y-1">
           <label className="block text-xs font-semibold text-stone-700">
-            Rua / Logradouro (auto-preenchido pelo CEP):
+            Rua / Logradouro:
           </label>
           <input
             type="text"
-            placeholder="Preenchido automaticamente pelo CEP"
+            placeholder="Ex: Rua João Florêncio de Sales Gomes"
             value={data.street}
-            onChange={(e) => handleStreetChange(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            onChange={(e) => updateFullAddress({ street: e.target.value })}
+            className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-stone-300 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
 
         <div className="sm:col-span-5 space-y-1">
           <label className="block text-xs font-semibold text-stone-700">
-            Bairro / Cidade:
+            Bairro:
           </label>
           <input
             type="text"
-            placeholder="Bairro / Cidade"
-            value={
-              data.neighborhood
-                ? `${data.neighborhood}${data.city ? ' - ' + data.city : ''}`
-                : data.city || ''
-            }
-            onChange={(e) => handleNeighborhoodChange(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="Ex: Jardim Ipê / Capão Redondo"
+            value={data.neighborhood}
+            onChange={(e) => updateFullAddress({ neighborhood: e.target.value })}
+            className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-stone-300 rounded-xl text-stone-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
       </div>
 
-      {searchError && (
-        <div className="bg-amber-100 border border-amber-300 rounded-xl p-2.5 text-xs text-amber-900 flex items-center gap-2">
-          <span>⚠️</span>
-          <span>{searchError}</span>
+      {searchFeedback && (
+        <div className="bg-stone-100 border border-stone-300 rounded-xl p-2 text-xs text-stone-800">
+          {searchFeedback}
         </div>
       )}
 
-      {/* Strict Calculated Fee Banner (Manual editing disabled) */}
-      <div className="bg-white p-3.5 rounded-2xl border-2 border-orange-200 shadow-xs space-y-2">
+      {/* Botão Ver Rota no Google Maps */}
+      <div className="pt-0.5">
+        <button
+          type="button"
+          onClick={handleOpenGoogleMapsRoute}
+          className="w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer bg-[#25d366] hover:bg-[#128c7e] text-white hover:scale-[1.01]"
+          title="Abrir rota no Google Maps para ver a distância exata a partir do nosso CEP 05868-140"
+        >
+          <span>🗺️</span>
+          <span>Ver Distância no Google Maps (Origem CEP: 05868-140)</span>
+          <span className="text-xs opacity-80">↗</span>
+        </button>
+      </div>
+
+      {/* Campo Manual de Frete (combinar ou digitar) */}
+      <div className="bg-white p-3.5 rounded-2xl border-2 border-orange-200 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🛵</span>
-            <div>
-              <div className="text-xs font-bold text-stone-900">
-                Valor do Frete (Cálculo Automático)
-              </div>
-              <div className="text-[11px] text-stone-500">
-                Taxa de <strong>R$ 2,50</strong> (até 1,99 km) e <strong>R$ 2,50/km</strong> a partir de 2 km
-              </div>
-            </div>
+          <div>
+            <label className="text-xs font-bold text-stone-900 block">
+              Valor do Frete (R$) - Ajuste Manual:
+            </label>
+            <p className="text-[11px] text-stone-500">
+              Digite o valor acertado ou deixe em branco para combinar pelo WhatsApp.
+            </p>
           </div>
 
           <div className="text-right">
-            <span className="text-xs text-stone-500 block">Total do Frete:</span>
-            <span className="text-lg sm:text-xl font-black text-orange-600 font-ubuntu">
-              {data.distanceKm > 0 ? `R$ ${data.feeFormatted}` : 'Aguardando CEP'}
+            <span className="text-xs text-stone-500 block">Frete somado:</span>
+            <span className="text-base sm:text-lg font-black text-orange-600 font-ubuntu">
+              {data.fee > 0 ? `+ R$ ${data.fee.toFixed(2).replace('.', ',')}` : 'A combinar'}
             </span>
           </div>
         </div>
 
-        {data.distanceKm > 0 ? (
-          <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 text-xs text-emerald-950 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-bold text-emerald-800">
-                Distância: ~{data.distanceKm.toFixed(1).replace('.', ',')} km
-              </span>
-              <span className="bg-emerald-200 text-emerald-900 font-extrabold px-2 py-0.5 rounded text-[11px]">
-                {data.explanation || (data.distanceKm < 2.0 ? `Até 1,99 km (taxa fixa base) = R$ 2,50` : `${data.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50 = R$ ${data.feeFormatted}`)}
-              </span>
-            </div>
-            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md font-semibold">
-              ✓ Frete automático aplicado
-            </span>
-          </div>
-        ) : (
-          <div className="bg-stone-50 border border-stone-200 rounded-xl p-2 text-[11px] text-stone-600 text-center">
-            💡 Digite o seu CEP acima para o sistema calcular automaticamente a distância e o frete exato (R$ 2,50/km).
-          </div>
-        )}
+        {/* Input manual de valor */}
+        <div className="relative">
+          <span className="absolute left-3.5 top-2.5 text-stone-500 font-bold text-sm">
+            R$
+          </span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00 (ou deixe em branco para combinar com a loja)"
+            value={data.feeInput}
+            onChange={(e) => handleFeeInputChange(e.target.value)}
+            className="w-full pl-11 pr-3 py-2 text-sm font-bold bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
+          />
+        </div>
 
-        {/* Botão Ver Distância/Rota no Maps estilo solicitado pelo cliente */}
-        <div className="pt-1.5 border-t border-stone-200">
-          <button
-            type="button"
-            onClick={handleOpenGoogleMapsRoute}
-            disabled={data.cep.replace(/\D/g, '').length !== 8}
-            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
-              data.cep.replace(/\D/g, '').length === 8
-                ? 'bg-[#25d366] hover:bg-[#128c7e] text-white shadow-sm hover:scale-[1.01]'
-                : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
-            }`}
-            title="Abrir rota no Google Maps com partida da nossa loja (CEP 05868-140) até seu endereço"
-          >
-            <span>🗺️</span>
-            <span>Ver Distância no Maps (Origem: 05868-140)</span>
-          </button>
+        {/* Atalhos rápidos de valor de frete */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] text-stone-500">Atalhos:</span>
+          {['2,50', '5,00', '7,50', '10,00', '15,00'].map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => handleFeeInputChange(chip)}
+              className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all cursor-pointer ${
+                data.feeInput === chip
+                  ? 'bg-orange-600 text-white border-orange-600'
+                  : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-orange-50 hover:border-orange-300'
+              }`}
+            >
+              R$ {chip}
+            </button>
+          ))}
+          {data.feeInput && (
+            <button
+              type="button"
+              onClick={() => handleFeeInputChange('')}
+              className="text-[11px] text-red-500 hover:underline ml-auto cursor-pointer"
+            >
+              Zerar / A Combinar
+            </button>
+          )}
         </div>
       </div>
-
-      {/* Radius Warning: If distance > 15 km */}
-      {data.isOverRadius && (
-        <div className="bg-amber-50 border-2 border-amber-400 rounded-2xl p-4 text-xs text-amber-950 space-y-3 animate-fade-in">
-          <div className="flex items-start gap-2.5">
-            <span className="text-2xl leading-none flex-shrink-0">⚠️</span>
-            <div className="flex-1 space-y-1">
-              <h4 className="font-bold text-amber-900 text-sm">
-                Atenção: Endereço fora do raio padrão de 15 km!
-              </h4>
-              <p className="leading-relaxed">
-                O seu CEP está a aproximadamente{' '}
-                <strong className="text-amber-950">
-                  {data.distanceKm.toFixed(1).replace('.', ',')} km
-                </strong>{' '}
-                da nossa loja (Cohab Adventista). O valor do frete calculado é de{' '}
-                <strong className="text-orange-700 font-bold">R$ {data.feeFormatted}</strong>.
-              </p>
-              <p className="font-bold text-stone-800 pt-1">
-                Tem certeza de que deseja prosseguir com a entrega?
-              </p>
-            </div>
-          </div>
-
-          {/* Confirmation Choices: SIM / NÃO */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 border-t border-amber-200">
-            {data.confirmedOverRadius ? (
-              <div className="flex-1 bg-emerald-100 border border-emerald-400 text-emerald-950 px-3 py-2 rounded-xl font-bold flex items-center justify-between">
-                <span>✓ Você confirmou que deseja a entrega (~{data.distanceKm.toFixed(1).replace('.', ',')} km).</span>
-                <button
-                  type="button"
-                  onClick={() => onChange({ confirmedOverRadius: false })}
-                  className="text-xs text-emerald-800 underline hover:text-emerald-950 ml-2 cursor-pointer font-normal"
-                >
-                  Alterar
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onChange({ confirmedOverRadius: true })}
-                className="flex-1 py-2.5 px-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer text-xs sm:text-sm"
-              >
-                <span>✓ Sim, tenho certeza e quero prosseguir</span>
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={onSwitchToPickup}
-              className="py-2.5 px-3 bg-white hover:bg-stone-100 border border-amber-300 text-stone-800 font-bold rounded-xl transition-colors text-xs flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
-            >
-              <span>🏪 Não, prefiro retirar na loja</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onChange({
-                  cep: '',
-                  street: '',
-                  number: '',
-                  complement: '',
-                  neighborhood: '',
-                  distanceKm: 0,
-                  fee: 0,
-                  feeFormatted: '0,00',
-                  isOverRadius: false,
-                  confirmedOverRadius: false,
-                  fullAddress: '',
-                });
-              }}
-              className="py-2.5 px-3 text-stone-500 hover:text-stone-800 font-semibold text-xs transition-colors cursor-pointer text-center"
-            >
-              Trocar CEP
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
