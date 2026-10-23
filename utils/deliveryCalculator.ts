@@ -343,16 +343,32 @@ export const calculateDeliveryByCep = async (
         geo.lat,
         geo.lng
       );
-      finalDistanceKm = parseFloat(Math.max(0.5, straightLineKm * 1.35).toFixed(1));
+      finalDistanceKm = parseFloat(Math.max(0.1, straightLineKm * 1.35).toFixed(1));
       source = 'haversine_estimate';
     }
 
-    const distanceKm = Math.max(0.5, finalDistanceKm);
-    const rawFee = distanceKm * STORE_INFO.pricePerKm;
-    const fee = parseFloat(rawFee.toFixed(2));
-    const feeFormatted = formatDecimalFee(fee);
+    const distanceKm = Math.max(0.1, finalDistanceKm);
+    const distStr = distanceKm.toFixed(1).replace('.', ',');
+
+    // Regra oficial do cliente:
+    // De 0,01 km até 1,0 km: taxa fixa de R$ 2,50 (não pode ser R$ 1,25 ou menor que R$ 2,50)
+    // Passando de 1,1 km em diante: o sistema calcula distância × R$ 2,50
+    let fee: number;
+    let feeFormatted: string;
+    let explanation: string;
+
+    if (distanceKm <= 1.0) {
+      fee = 2.50;
+      feeFormatted = formatDecimalFee(fee);
+      explanation = `${distStr} km (taxa fixa mínima de até 1 km) = R$ ${feeFormatted}`;
+    } else {
+      const rawFee = distanceKm * STORE_INFO.pricePerKm;
+      fee = parseFloat(rawFee.toFixed(2));
+      feeFormatted = formatDecimalFee(fee);
+      explanation = `${distStr} km × R$ 2,50/km = R$ ${feeFormatted}`;
+    }
+
     const isOverRadius = distanceKm > STORE_INFO.maxStandardRadiusKm;
-    const explanation = `${distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50/km = R$ ${feeFormatted}`;
 
     return {
       success: true,
@@ -374,7 +390,7 @@ export const calculateDeliveryByCep = async (
   const prefix5 = cleanCep.slice(0, 5);
   let estimatedKm = 3.5;
   if (prefix5.startsWith('058')) {
-    estimatedKm = 2.0; // Cohab Adventista / Capão Redondo local
+    estimatedKm = 1.0; // Cohab Adventista / Capão Redondo local
   } else if (prefix5.startsWith('057')) {
     estimatedKm = 5.0; // Campo Limpo
   } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
@@ -385,11 +401,23 @@ export const calculateDeliveryByCep = async (
     estimatedKm = 18.0; // Centro / Zona Norte / Zona Leste (> 15 km)
   }
 
-  const rawFee = estimatedKm * STORE_INFO.pricePerKm;
-  const fee = parseFloat(rawFee.toFixed(2));
-  const feeFormatted = formatDecimalFee(fee);
+  let fee: number;
+  let feeFormatted: string;
+  let explanation: string;
+  const distStr = estimatedKm.toFixed(1).replace('.', ',');
+
+  if (estimatedKm <= 1.0) {
+    fee = 2.50;
+    feeFormatted = formatDecimalFee(fee);
+    explanation = `~${distStr} km (taxa fixa mínima de até 1 km) = R$ ${feeFormatted}`;
+  } else {
+    const rawFee = estimatedKm * STORE_INFO.pricePerKm;
+    fee = parseFloat(rawFee.toFixed(2));
+    feeFormatted = formatDecimalFee(fee);
+    explanation = `~${distStr} km (estimado) × R$ 2,50/km = R$ ${feeFormatted}`;
+  }
+
   const isOverRadius = estimatedKm > STORE_INFO.maxStandardRadiusKm;
-  const explanation = `~${estimatedKm.toFixed(1).replace('.', ',')} km (estimado) × R$ 2,50/km = R$ ${feeFormatted}`;
 
   return {
     success: true,

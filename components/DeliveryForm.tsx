@@ -328,12 +328,12 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
 
         {data.distanceKm > 0 ? (
           <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 text-xs text-emerald-950 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-emerald-800">
-                Distância calculada: ~{data.distanceKm.toFixed(1).replace('.', ',')} km
+                Distância: ~{data.distanceKm.toFixed(1).replace('.', ',')} km
               </span>
               <span className="bg-emerald-200 text-emerald-900 font-extrabold px-2 py-0.5 rounded text-[11px]">
-                {data.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50 = R$ {data.feeFormatted}
+                {data.explanation || (data.distanceKm <= 1.0 ? `Até 1 km (taxa fixa mínima) = R$ 2,50` : `${data.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50 = R$ ${data.feeFormatted}`)}
               </span>
             </div>
             <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md font-semibold">
