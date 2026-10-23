@@ -6,6 +6,7 @@ import { PrinterIcon } from './icons/PrinterIcon';
 import ProductDetailModal from './ProductDetailModal';
 import ThermalReceiptModal from './ThermalReceiptModal';
 import { useStoreStatus } from '../hooks/useStoreStatus';
+import { calculateDeliveryFee, STORE_INFO } from '../utils/deliveryCalculator';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -74,6 +75,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [activeCategory, setActiveCategory] = useState<'all' | 'salgadas' | 'doces' | 'bebidas'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [observations, setObservations] = useState('');
   const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -83,6 +85,47 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
   const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>('');
   const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  
+  // Cálculo automático de frete (distância × R$ 2,50)
+  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
+  const [deliveryCalcInfo, setDeliveryCalcInfo] = useState<{
+    distanceKm: number;
+    fee: number;
+    explanation: string;
+    source: string;
+  } | null>(null);
+  const [deliveryCalcError, setDeliveryCalcError] = useState<string | null>(null);
+
+  const handleCalculateDelivery = async (customAddr?: string) => {
+    const addr = (customAddr !== undefined ? customAddr : deliveryAddress).trim();
+    if (!addr) {
+      setDeliveryCalcError('Por favor, informe seu endereço ou CEP para calcular o frete.');
+      return;
+    }
+    setIsCalculatingDelivery(true);
+    setDeliveryCalcError(null);
+    try {
+      const res = await calculateDeliveryFee(addr);
+      if (res.resolvedAddress && (!deliveryAddress || deliveryAddress.trim().length < 15)) {
+        setDeliveryAddress(res.resolvedAddress);
+      }
+      setDeliveryFeeInput(res.feeFormatted);
+      setDeliveryCalcInfo({
+        distanceKm: res.distanceKm,
+        fee: res.fee,
+        explanation: res.explanation,
+        source: res.source,
+      });
+      if (!res.success && res.error) {
+        setDeliveryCalcError(res.explanation);
+      }
+    } catch (err) {
+      console.warn('Erro ao calcular frete:', err);
+      setDeliveryCalcError('Não foi possível conectar ao serviço de rotas. Você pode preencher o valor do frete manualmente.');
+    } finally {
+      setIsCalculatingDelivery(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -195,7 +238,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
     if (isDelivery) {
       message += `🛵 *MODALIDADE:* Entrega (Delivery)\n`;
-      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar / A consultar'}\n`;
+      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar / R$ 0,00'}\n`;
+      if (deliveryCalcInfo) {
+        message += `📏 *Cálculo do Frete:* ${deliveryCalcInfo.explanation}\n`;
+      }
       message += `💰 *VALOR TOTAL COM FRETE:* ${formatPrice(grandTotalPrice)}\n`;
       if (deliveryAddress.trim()) {
         message += `\n📍 *Endereço de Entrega:* ${deliveryAddress.trim()}\n`;
@@ -208,6 +254,10 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
     if (customerName.trim()) {
       message += `\n👤 *Nome do Cliente:* ${customerName.trim()}\n`;
+    }
+
+    if (customerPhone.trim()) {
+      message += `📱 *Telefone / WhatsApp:* ${customerPhone.trim()}\n`;
     }
 
     if (observations.trim()) {
@@ -358,28 +408,109 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </div>
           ) : (
             <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 sm:p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
-                  🛵
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-orange-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
+                    🛵
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
+                      <span>Nossa Entrega Própria (Delivery)</span>
+                      <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
+                        R$ 2,50 por km
+                      </span>
+                    </h3>
+                    <p className="text-xs text-stone-600">
+                      Calculado automaticamente com base na distância da loja até seu endereço (ou digite manualmente o valor que desejar).
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
-                    <span>Entrega Direta (Delivery)</span>
-                    <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
-                      Cálculo de Frete
-                    </span>
-                  </h3>
-                  <p className="text-xs text-stone-600">
-                    Informe o valor do frete e seu endereço. O valor será somado ao valor dos produtos selecionados!
-                  </p>
+
+                <div className="text-[11px] bg-white text-stone-600 px-3 py-1.5 rounded-xl border border-orange-200 sm:text-right">
+                  <span className="font-bold text-orange-800">Partida:</span> Cohab Adventista (SP)
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                {/* Campo digitável do frete com placeholder */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-800 mb-1 flex items-center justify-between">
-                    <span>Taxa de Entrega / Frete:</span>
+              {/* Grid: Endereço do Cliente com Cálculo Automático vs Taxa de Frete Digitável */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Endereço de Entrega + Botão de Cálculo Automático */}
+                <div className="lg:col-span-7 space-y-2">
+                  <label className="block text-xs font-bold text-stone-800">
+                    Endereço de Entrega (CEP ou Rua, Nº e Bairro):
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ex: CEP 05868-100 ou Rua Comendador Antunes..."
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCalculateDelivery();
+                        }
+                      }}
+                      className="flex-1 px-3.5 py-2.5 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleCalculateDelivery()}
+                      disabled={isCalculatingDelivery || !deliveryAddress.trim()}
+                      className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all flex-shrink-0 cursor-pointer ${
+                        isCalculatingDelivery
+                          ? 'bg-orange-300 text-white cursor-wait'
+                          : !deliveryAddress.trim()
+                          ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                          : 'bg-orange-600 hover:bg-orange-700 text-white hover:scale-[1.02]'
+                      }`}
+                      title="Calcular automaticamente a distância × R$ 2,50"
+                    >
+                      {isCalculatingDelivery ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Calculando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>⚡ Calcular Frete</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Feedback de cálculo automático */}
+                  {deliveryCalcInfo && (
+                    <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 text-xs text-emerald-950 flex items-start gap-2 animate-fade-in">
+                      <span className="text-base leading-none">🚗</span>
+                      <div className="flex-1 leading-snug">
+                        <div className="font-bold flex items-center gap-2 flex-wrap">
+                          <span>Distância: ~{deliveryCalcInfo.distanceKm.toFixed(1).replace('.', ',')} km</span>
+                          <span className="bg-emerald-200 text-emerald-900 font-extrabold px-1.5 py-0.5 rounded text-[11px]">
+                            {deliveryCalcInfo.explanation}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          ✓ Valor aplicado automaticamente no campo de frete! Você pode editar manualmente se quiser.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {deliveryCalcError && (
+                    <div className="bg-amber-100/80 border border-amber-300 rounded-xl p-2 text-xs text-amber-900 flex items-center gap-1.5">
+                      <span>⚠️</span>
+                      <span>{deliveryCalcError}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Campo digitável do frete com total flexibilidade */}
+                <div className="lg:col-span-5 bg-white/70 p-3 rounded-2xl border border-orange-200 space-y-2">
+                  <label className="block text-xs font-bold text-stone-800 flex items-center justify-between">
+                    <span>Taxa de Frete (R$):</span>
                     {deliveryFee > 0 && (
                       <span className="text-orange-700 font-black text-xs">
                         + {formatPrice(deliveryFee)}
@@ -393,7 +524,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <input
                       type="text"
                       inputMode="decimal"
-                      placeholder="Digite o valor do frete (ex: 5,00 ou 10,00)"
+                      placeholder="0,00 (digite ou altere à vontade)"
                       value={deliveryFeeInput}
                       onChange={(e) => setDeliveryFeeInput(e.target.value)}
                       className="w-full pl-11 pr-3 py-2 text-sm font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
@@ -401,14 +532,14 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                   </div>
 
                   {/* Sugestões rápidas de frete */}
-                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                    <span className="text-[11px] text-stone-500">Valores rápidos:</span>
-                    {['5,00', '7,00', '10,00', '12,00', '15,00'].map((chip) => (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-stone-500">Atalhos:</span>
+                    {['5,00', '7,50', '10,00', '12,50', '15,00'].map((chip) => (
                       <button
                         key={chip}
                         type="button"
                         onClick={() => setDeliveryFeeInput(chip)}
-                        className={`text-xs px-2.5 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                        className={`text-xs px-2 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
                           deliveryFeeInput === chip
                             ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
                             : 'bg-white text-stone-700 border-stone-300 hover:bg-orange-100 hover:border-orange-300'
@@ -420,30 +551,50 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     {deliveryFeeInput && (
                       <button
                         type="button"
-                        onClick={() => setDeliveryFeeInput('')}
+                        onClick={() => {
+                          setDeliveryFeeInput('');
+                          setDeliveryCalcInfo(null);
+                        }}
                         className="text-[11px] text-red-500 hover:underline ml-auto cursor-pointer"
                       >
-                        Zerar frete
+                        Zerar
                       </button>
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Endereço de Entrega */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-800 mb-1">
-                    Endereço de Entrega (Rua, Nº, Bairro, Complemento):
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Rua das Flores, 123, Bloco B - Apto 42, Bairro..."
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                  />
-                  <p className="text-[11px] text-stone-500 mt-1">
-                    Você também pode confirmar os detalhes do endereço diretamente pelo WhatsApp após enviar.
-                  </p>
+              {/* Informações do Cliente (Nome e Telefone como Opcional) */}
+              <div className="pt-2 border-t border-orange-200">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-2">
+                  Dados do Cliente (Opcionais):
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      Nome do Cliente (opcional):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: João da Silva (opcional)"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">
+                      Telefone / WhatsApp (opcional):
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="Ex: (11) 98765-4321 (opcional)"
+                      value={customerPhone}
+                      onChange={(e) => setCustomerPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -871,28 +1022,78 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 {/* If Delivery: Show delivery fee placeholder input and address */}
                 {orderType === 'delivery' && (
                   <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 space-y-3">
+                    <div className="flex items-center justify-between text-xs pb-1 border-b border-orange-200">
+                      <span className="font-bold text-orange-900">🛵 Entrega (Delivery)</span>
+                      <span className="text-[11px] bg-orange-200 text-orange-950 font-bold px-2 py-0.5 rounded-full">
+                        R$ 2,50/km
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-800 mb-1">
+                        Endereço de Entrega (CEP ou Rua, Nº e Bairro):
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Digite seu endereço ou CEP..."
+                          value={deliveryAddress}
+                          onChange={(e) => setDeliveryAddress(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCalculateDelivery();
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCalculateDelivery()}
+                          disabled={isCalculatingDelivery || !deliveryAddress.trim()}
+                          className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center justify-center gap-1 shadow-sm transition-all flex-shrink-0 cursor-pointer ${
+                            isCalculatingDelivery
+                              ? 'bg-orange-300 text-white cursor-wait'
+                              : !deliveryAddress.trim()
+                              ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                              : 'bg-orange-600 hover:bg-orange-700 text-white'
+                          }`}
+                        >
+                          {isCalculatingDelivery ? 'Calculando...' : '⚡ Calcular Frete'}
+                        </button>
+                      </div>
+
+                      {deliveryCalcInfo && (
+                        <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-300 rounded-lg text-xs text-emerald-900">
+                          <span className="font-bold">Distância: ~{deliveryCalcInfo.distanceKm.toFixed(1).replace('.', ',')} km</span> • {deliveryCalcInfo.explanation}
+                        </div>
+                      )}
+                    </div>
+
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-bold text-stone-800">
-                          Valor do Frete (R$):
+                          Valor do Frete (R$) - Digite ou altere livremente:
                         </label>
-                        <span className="text-[11px] text-orange-700 font-semibold">
-                          Somado ao total
-                        </span>
+                        {deliveryFee > 0 && (
+                          <span className="text-xs font-bold text-orange-700">
+                            + {formatPrice(deliveryFee)}
+                          </span>
+                        )}
                       </div>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-stone-500 font-bold text-sm">R$</span>
                         <input
                           type="text"
                           inputMode="decimal"
-                          placeholder="Digite o valor do frete (ex: 5,00 ou 10,00)"
+                          placeholder="0,00"
                           value={deliveryFeeInput}
                           onChange={(e) => setDeliveryFeeInput(e.target.value)}
                           className="w-full pl-9 pr-3 py-2 text-sm font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
                         />
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                        {['5,00', '7,00', '10,00', '12,00', '15,00'].map((chip) => (
+                        {['5,00', '7,50', '10,00', '12,50', '15,00'].map((chip) => (
                           <button
                             key={chip}
                             type="button"
@@ -906,20 +1107,19 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                             R$ {chip}
                           </button>
                         ))}
+                        {deliveryFeeInput && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeliveryFeeInput('');
+                              setDeliveryCalcInfo(null);
+                            }}
+                            className="text-[11px] text-red-500 hover:underline ml-auto cursor-pointer"
+                          >
+                            Zerar
+                          </button>
+                        )}
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-stone-800 mb-1">
-                        Endereço de Entrega:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Rua, número, complemento, bairro..."
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                      />
                     </div>
                   </div>
                 )}
@@ -944,17 +1144,32 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
                 {/* Optional Customer info */}
                 <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Seu Nome (para identificação):
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Maria Silva"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Nome do Cliente (opcional):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Maria Silva (opcional)"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">
+                        Telefone / WhatsApp (opcional):
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="Ex: (11) 98765-4321 (opcional)"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -1045,6 +1260,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           onClose={() => setShowPrintModal(false)}
           items={selectedItemsList}
           customerName={customerName}
+          customerPhone={customerPhone}
           observations={observations}
           totalPrice={grandTotalPrice}
           subtotalItems={subtotalProducts}

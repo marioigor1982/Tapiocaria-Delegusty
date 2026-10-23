@@ -14,6 +14,7 @@ interface ThermalReceiptModalProps {
   onClose: () => void;
   items: ReceiptItemEntry[];
   customerName: string;
+  customerPhone?: string;
   observations: string;
   totalPrice: number; // Valor Total final (com frete quando aplicável)
   subtotalItems?: number; // Subtotal dos produtos
@@ -34,6 +35,7 @@ const formatPrice = (val: number): string => {
 export const generateThermalReceiptHtml = (data: {
   items: ReceiptItemEntry[];
   customerName: string;
+  customerPhone?: string;
   observations: string;
   subtotalItems: number;
   deliveryFee: number;
@@ -48,6 +50,7 @@ export const generateThermalReceiptHtml = (data: {
   const {
     items,
     customerName,
+    customerPhone = '',
     observations,
     subtotalItems,
     deliveryFee,
@@ -218,6 +221,16 @@ export const generateThermalReceiptHtml = (data: {
           <td class="bold">CLIENTE:</td>
           <td class="right bold">${customerName.trim() || (isDelivery ? 'NÃO INFORMADO' : 'NÃO INFORMADO (BALCÃO)')}</td>
         </tr>
+        ${
+          customerPhone.trim()
+            ? `
+        <tr>
+          <td class="bold">TELEFONE:</td>
+          <td class="right">${customerPhone.trim()}</td>
+        </tr>
+        `
+            : ''
+        }
         <tr>
           <td class="bold">MODALIDADE:</td>
           <td class="right bold">${isDelivery ? '🛵 ENTREGA (DELIVERY)' : '🏪 RETIRADA NA LOJA'}</td>
@@ -307,6 +320,7 @@ export const generateThermalReceiptHtml = (data: {
 export const triggerPrintThermalReceipt = (data: {
   items: ReceiptItemEntry[];
   customerName: string;
+  customerPhone?: string;
   observations: string;
   subtotalItems: number;
   deliveryFee: number;
@@ -368,6 +382,7 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   onClose,
   items,
   customerName,
+  customerPhone = '',
   observations,
   totalPrice,
   subtotalItems,
@@ -401,6 +416,7 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     triggerPrintThermalReceipt({
       items,
       customerName,
+      customerPhone,
       observations,
       subtotalItems: calculatedSubtotal,
       deliveryFee: isDelivery ? deliveryFee : 0,
@@ -489,9 +505,15 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               <div className="flex justify-between">
                 <span className="font-bold">CLIENTE:</span>
                 <span className="font-bold truncate max-w-[170px] text-right">
-                  {customerName.trim() || (isDelivery ? 'Cliente Delivery' : 'Balcão / Retirada')}
+                  {customerName.trim() || (isDelivery ? 'Cliente Delivery (opcional)' : 'Balcão / Retirada (opcional)')}
                 </span>
               </div>
+              {customerPhone.trim() && (
+                <div className="flex justify-between">
+                  <span className="font-bold">TELEFONE:</span>
+                  <span className="text-right font-medium">{customerPhone.trim()}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="font-bold">MODALIDADE:</span>
                 <span className="font-bold">{isDelivery ? 'Entrega (Delivery)' : 'Retirada na Loja'}</span>
