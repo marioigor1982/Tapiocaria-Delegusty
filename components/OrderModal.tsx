@@ -4,7 +4,9 @@ import { WhatsAppIcon } from './icons/WhatsAppIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { PrinterIcon } from './icons/PrinterIcon';
 import ThermalReceiptModal from './ThermalReceiptModal';
-import { calculateDeliveryFee, STORE_INFO } from '../utils/deliveryCalculator';
+import { STORE_INFO } from '../utils/deliveryCalculator';
+import DeliveryForm, { type DeliveryAddressData } from './DeliveryForm';
+import RadiusConfirmationModal from './RadiusConfirmationModal';
 
 const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -102,48 +104,26 @@ const OrderModal: React.FC<OrderModalProps> = ({
 
   // Modalidade: Retirada vs Entrega
   const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
-  const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>('');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
+  const [deliveryData, setDeliveryData] = useState<DeliveryAddressData>({
+    cep: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: 'São Paulo',
+    state: 'SP',
+    distanceKm: 0,
+    fee: 0,
+    feeFormatted: '0,00',
+    explanation: '',
+    isOverRadius: false,
+    confirmedOverRadius: false,
+    fullAddress: '',
+  });
+  const [showRadiusModal, setShowRadiusModal] = useState(false);
 
-  // Cálculo automático de frete
-  const [isCalculatingDelivery, setIsCalculatingDelivery] = useState(false);
-  const [deliveryCalcInfo, setDeliveryCalcInfo] = useState<{
-    distanceKm: number;
-    fee: number;
-    explanation: string;
-    source: string;
-  } | null>(null);
-  const [deliveryCalcError, setDeliveryCalcError] = useState<string | null>(null);
-
-  const handleCalculateDelivery = async (customAddr?: string) => {
-    const addr = (customAddr !== undefined ? customAddr : deliveryAddress).trim();
-    if (!addr) {
-      setDeliveryCalcError('Por favor, informe seu endereço ou CEP para calcular o frete.');
-      return;
-    }
-    setIsCalculatingDelivery(true);
-    setDeliveryCalcError(null);
-    try {
-      const res = await calculateDeliveryFee(addr);
-      if (res.resolvedAddress && (!deliveryAddress || deliveryAddress.trim().length < 15)) {
-        setDeliveryAddress(res.resolvedAddress);
-      }
-      setDeliveryFeeInput(res.feeFormatted);
-      setDeliveryCalcInfo({
-        distanceKm: res.distanceKm,
-        fee: res.fee,
-        explanation: res.explanation,
-        source: res.source,
-      });
-      if (!res.success && res.error) {
-        setDeliveryCalcError(res.explanation);
-      }
-    } catch (err) {
-      console.warn('Erro ao calcular frete no modal:', err);
-      setDeliveryCalcError('Não foi possível conectar ao serviço de rotas. Você pode preencher o valor do frete manualmente.');
-    } finally {
-      setIsCalculatingDelivery(false);
-    }
+  const handleDeliveryDataChange = (updated: Partial<DeliveryAddressData>) => {
+    setDeliveryData((prev) => ({ ...prev, ...updated }));
   };
 
   // If initial item changes, add it
@@ -249,8 +229,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
   }, [selectedItemsList]);
 
   const deliveryFee = useMemo(() => {
-    return orderType === 'delivery' ? parseFee(deliveryFeeInput) : 0;
-  }, [orderType, deliveryFeeInput]);
+    return orderType === 'delivery' ? deliveryData.fee : 0;
+  }, [orderType, deliveryData.fee]);
 
   const grandTotalPrice = useMemo(() => {
     return subtotalProducts + deliveryFee;
@@ -263,10 +243,30 @@ const OrderModal: React.FC<OrderModalProps> = ({
       return;
     }
 
-    const greeting = getTimeGreeting();
     const isDelivery = orderType === 'delivery';
 
-    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
+    if (isDelivery) {
+      const cleanCep = deliveryData.cep.replace(/\D/g, '');
+      if (cleanCep.length !== 8) {
+        alert('Por favor, preencha o CEP de entrega (obrigatório com 8 dígitos) para calcularmos o frete.');
+        return;
+      }
+
+      if (!deliveryData.number.trim()) {
+        alert('Por favor, informe o número da residência/comércio para a entrega (obrigatório).');
+        return;
+      }
+
+      // Se a distância for maior que 15 km e o cliente ainda não confirmou
+      if (deliveryData.isOverRadius && !deliveryData.confirmedOverRadius) {
+        setShowRadiusModal(true);
+        return;
+      }
+    }
+
+    const greeting = getTimeGreeting();
+
+    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA PRÓPRIA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
     message += `📋 *ITENS DO PEDIDO:*\n`;
 
     selectedItemsList.forEach((entry) => {
@@ -277,15 +277,25 @@ const OrderModal: React.FC<OrderModalProps> = ({
     message += `💵 *SUBTOTAL DOS PRODUTOS:* ${formatPrice(subtotalProducts)}\n`;
 
     if (isDelivery) {
-      message += `🛵 *MODALIDADE:* Entrega (Delivery)\n`;
-      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar / R$ 0,00'}\n`;
-      if (deliveryCalcInfo) {
-        message += `📏 *Cálculo do Frete:* ${deliveryCalcInfo.explanation}\n`;
+      message += `🛵 *MODALIDADE:* Entrega Própria (Delivery)\n`;
+      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A calcular pelo CEP'}\n`;
+      if (deliveryData.distanceKm > 0) {
+        message += `📏 *Cálculo do Frete:* ${deliveryData.explanation || `~${deliveryData.distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50/km = R$ ${deliveryData.feeFormatted}`}\n`;
+      }
+      if (deliveryData.isOverRadius) {
+        message += `⚠️ *Aviso de Raio Estendido (>15 km):* Cliente confirmou ciência da distância (~${deliveryData.distanceKm.toFixed(1).replace('.', ',')} km).\n`;
       }
       message += `💰 *VALOR TOTAL COM FRETE:* ${formatPrice(grandTotalPrice)}\n`;
-      if (deliveryAddress.trim()) {
-        message += `\n📍 *Endereço de Entrega:* ${deliveryAddress.trim()}\n`;
-      }
+
+      const finalAddress = deliveryData.fullAddress || [
+        deliveryData.street ? `${deliveryData.street}, Nº ${deliveryData.number}` : `Nº ${deliveryData.number}`,
+        deliveryData.complement,
+        deliveryData.neighborhood,
+        `${deliveryData.city} - ${deliveryData.state}`,
+        `CEP ${deliveryData.cep}`,
+      ].filter(Boolean).join(', ');
+
+      message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
     } else {
       message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
       message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
@@ -637,7 +647,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 </div>
               </div>
 
-              {/* Se entrega, campo com cálculo automático e taxa digitável flexível */}
+              {/* Se entrega, formulário com CEP obrigatório, número, complemento e frete automático estrito */}
               {orderType === 'delivery' && (
                 <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 mb-4 space-y-2.5">
                   <div className="flex items-center justify-between text-xs pb-1 border-b border-orange-200">
@@ -647,104 +657,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
                     </span>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-stone-800 mb-1">
-                      Endereço de Entrega (CEP ou Rua, Nº e Bairro):
-                    </label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        placeholder="CEP ou Rua, Nº, Bairro..."
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleCalculateDelivery();
-                          }
-                        }}
-                        className="flex-1 px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleCalculateDelivery()}
-                        disabled={isCalculatingDelivery || !deliveryAddress.trim()}
-                        className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 shadow-xs transition-all flex-shrink-0 cursor-pointer ${
-                          isCalculatingDelivery
-                            ? 'bg-orange-300 text-white cursor-wait'
-                            : !deliveryAddress.trim()
-                            ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
-                            : 'bg-orange-600 hover:bg-orange-700 text-white'
-                        }`}
-                        title="Calcular distância × R$ 2,50"
-                      >
-                        {isCalculatingDelivery ? 'Calculando...' : '⚡ Calcular'}
-                      </button>
-                    </div>
-
-                    {deliveryCalcInfo && (
-                      <div className="mt-1.5 p-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-[11px] text-emerald-950">
-                        <span className="font-bold">~{deliveryCalcInfo.distanceKm.toFixed(1).replace('.', ',')} km</span> • {deliveryCalcInfo.explanation}
-                      </div>
-                    )}
-                    {deliveryCalcError && (
-                      <div className="mt-1 p-1 bg-amber-100 border border-amber-300 rounded text-[11px] text-amber-900">
-                        ⚠️ {deliveryCalcError}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-stone-800">
-                        Valor do Frete (R$) - Digite ou altere:
-                      </label>
-                      {deliveryFee > 0 && (
-                        <span className="text-[11px] text-orange-700 font-bold">
-                          + {formatPrice(deliveryFee)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-3 top-2 text-stone-500 font-bold text-xs">R$</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="0,00"
-                        value={deliveryFeeInput}
-                        onChange={(e) => setDeliveryFeeInput(e.target.value)}
-                        className="w-full pl-8 pr-2 py-1.5 text-xs font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 flex-wrap mt-1.5">
-                      {['5,00', '7,50', '10,00', '12,50', '15,00'].map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => setDeliveryFeeInput(chip)}
-                          className={`text-[11px] px-2 py-0.5 rounded-md border font-semibold transition-all cursor-pointer ${
-                            deliveryFeeInput === chip
-                              ? 'bg-orange-600 text-white border-orange-600'
-                              : 'bg-white text-stone-700 border-stone-300 hover:bg-orange-100'
-                          }`}
-                        >
-                          R$ {chip}
-                        </button>
-                      ))}
-                      {deliveryFeeInput && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDeliveryFeeInput('');
-                            setDeliveryCalcInfo(null);
-                          }}
-                          className="text-[10px] text-red-500 hover:underline ml-auto cursor-pointer"
-                        >
-                          Zerar
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  <DeliveryForm
+                    data={deliveryData}
+                    onChange={handleDeliveryDataChange}
+                    onSwitchToPickup={() => setOrderType('pickup')}
+                    compact
+                  />
                 </div>
               )}
 
@@ -889,7 +807,27 @@ const OrderModal: React.FC<OrderModalProps> = ({
           totalItemCount={totalItemCount}
           orderType={orderType}
           deliveryFee={deliveryFee}
-          deliveryAddress={deliveryAddress}
+          deliveryAddress={deliveryData.fullAddress}
+        />
+
+        {/* Modal de Confirmação de Raio > 15 km */}
+        <RadiusConfirmationModal
+          isOpen={showRadiusModal}
+          distanceKm={deliveryData.distanceKm}
+          feeFormatted={deliveryData.feeFormatted}
+          onConfirm={() => {
+            setDeliveryData((prev) => ({ ...prev, confirmedOverRadius: true }));
+            setShowRadiusModal(false);
+            // Trigger order after confirmation
+            setTimeout(() => {
+              handleSendWhatsApp();
+            }, 100);
+          }}
+          onCancelPickup={() => {
+            setOrderType('pickup');
+            setShowRadiusModal(false);
+          }}
+          onClose={() => setShowRadiusModal(false)}
         />
       </div>
 

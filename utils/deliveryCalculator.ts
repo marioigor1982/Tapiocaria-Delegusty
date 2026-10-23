@@ -1,7 +1,13 @@
 // Utility for calculating delivery distance and shipping fees based on store origin and customer address
+// Store: Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140
+// Rate: R$ 2,50 por KM
 
 export const STORE_INFO = {
   name: 'Tapioca Delegusty',
+  street: 'Travessa Casca Preciosa, 54',
+  neighborhood: 'Cohab Adventista',
+  city: 'São Paulo',
+  state: 'SP',
   address: 'Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP',
   cep: '05868-140',
   fullAddress: 'Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140',
@@ -9,8 +15,18 @@ export const STORE_INFO = {
     lat: -23.6667,
     lng: -46.7770,
   },
-  pricePerKm: 2.50, // R$ 2,50 por km solicitado pelo cliente
+  pricePerKm: 2.50, // R$ 2,50 por km estrito solicitado pelo cliente
+  maxStandardRadiusKm: 15.0, // Raio padrão de 15 km
 };
+
+export interface CepAddressData {
+  cep: string;
+  street: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  full: string;
+}
 
 export interface DeliveryCalculationResult {
   success: boolean;
@@ -18,7 +34,12 @@ export interface DeliveryCalculationResult {
   fee: number;
   feeFormatted: string; // e.g. "7,50" or "10,00"
   explanation: string; // e.g. "3,2 km × R$ 2,50 = R$ 8,00"
+  isOverRadius: boolean; // true if distanceKm > 15 km
   resolvedAddress?: string;
+  street?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
   source: 'driving_route' | 'haversine_estimate' | 'cep_estimate' | 'fallback';
   error?: string;
 }
@@ -48,6 +69,13 @@ export const formatDecimalFee = (num: number): string => {
   return num.toFixed(2).replace('.', ',');
 };
 
+// Format raw CEP string into 00000-000
+export const formatCepString = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
 // Known approximate coordinates for main neighborhoods / zones around Capão Redondo & SP
 const NEIGHBORHOOD_CACHE: Record<string, { lat: number; lng: number }> = {
   'cohab adventista': { lat: -23.6667, lng: -46.7770 },
@@ -67,23 +95,20 @@ const NEIGHBORHOOD_CACHE: Record<string, { lat: number; lng: number }> = {
   'grajaú': { lat: -23.7380, lng: -46.6970 },
   'interlagos': { lat: -23.7010, lng: -46.6870 },
   'itapecerica da serra': { lat: -23.7170, lng: -46.8490 },
-  'embú das artes': { lat: -23.6490, lng: -46.8520 },
   'embu das artes': { lat: -23.6490, lng: -46.8520 },
+  'embú das artes': { lat: -23.6490, lng: -46.8520 },
   'taboao da serra': { lat: -23.6260, lng: -46.7580 },
   'taboão da serra': { lat: -23.6260, lng: -46.7580 },
+  'morumbi': { lat: -23.6030, lng: -46.7180 },
+  'vila andrade': { lat: -23.6330, lng: -46.7320 },
 };
 
-// Look up address details via CEP (ViaCEP)
-export const fetchAddressByCep = async (rawCep: string): Promise<{
-  street?: string;
-  neighborhood?: string;
-  city?: string;
-  state?: string;
-  full?: string;
-} | null> => {
+// Look up address details via CEP (ViaCEP with BrasilAPI fallback)
+export const fetchAddressByCep = async (rawCep: string): Promise<CepAddressData | null> => {
   const clean = rawCep.replace(/\D/g, '');
   if (clean.length !== 8) return null;
 
+  // 1. Try ViaCEP
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4000);
@@ -92,28 +117,62 @@ export const fetchAddressByCep = async (rawCep: string): Promise<{
     });
     clearTimeout(timeout);
 
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    if (data.erro) return null;
+    if (resp.ok) {
+      const data = await resp.json();
+      if (!data.erro) {
+        const parts = [
+          data.logradouro,
+          data.bairro,
+          data.localidade ? `${data.localidade} - ${data.uf}` : '',
+          `CEP ${data.cep}`,
+        ].filter(Boolean);
 
-    const parts = [
-      data.logradouro,
-      data.bairro,
-      data.localidade ? `${data.localidade} - ${data.uf}` : '',
-      `CEP ${data.cep}`,
-    ].filter(Boolean);
-
-    return {
-      street: data.logradouro,
-      neighborhood: data.bairro,
-      city: data.localidade,
-      state: data.uf,
-      full: parts.join(', '),
-    };
+        return {
+          cep: data.cep || formatCepString(clean),
+          street: data.logradouro || '',
+          neighborhood: data.bairro || '',
+          city: data.localidade || 'São Paulo',
+          state: data.uf || 'SP',
+          full: parts.join(', '),
+        };
+      }
+    }
   } catch (err) {
-    console.warn('ViaCEP lookup error:', err);
-    return null;
+    console.warn('ViaCEP lookup error, trying fallback:', err);
   }
+
+  // 2. Fallback to BrasilAPI
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+    const resp = await fetch(`https://brasilapi.com.br/api/cep/v1/${clean}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (resp.ok) {
+      const data = await resp.json();
+      const parts = [
+        data.street,
+        data.neighborhood,
+        data.city ? `${data.city} - ${data.state}` : '',
+        `CEP ${formatCepString(clean)}`,
+      ].filter(Boolean);
+
+      return {
+        cep: formatCepString(clean),
+        street: data.street || '',
+        neighborhood: data.neighborhood || '',
+        city: data.city || 'São Paulo',
+        state: data.state || 'SP',
+        full: parts.join(', '),
+      };
+    }
+  } catch (err) {
+    console.warn('BrasilAPI fallback error:', err);
+  }
+
+  return null;
 };
 
 // Geocode query string to { lat, lng } using Nominatim OpenStreetMap
@@ -153,7 +212,7 @@ export const geocodeAddress = async (
     const resp = await fetch(url, {
       signal: controller.signal,
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
     clearTimeout(timeout);
@@ -200,7 +259,6 @@ export const getDrivingRouteDistanceKm = async (
     if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
       const distanceMeters = data.routes[0].distance;
       if (typeof distanceMeters === 'number' && distanceMeters > 0) {
-        // Return kilometers with 1 decimal precision
         return parseFloat((distanceMeters / 1000).toFixed(1));
       }
     }
@@ -212,59 +270,72 @@ export const getDrivingRouteDistanceKm = async (
 };
 
 /**
- * Main function to calculate delivery fee:
- * Formula: Distância (km) × R$ 2,50
- *
- * Automatically handles:
- * - CEPs (extracts address details and geocodes)
- * - Street names and neighborhoods
- * - Real driving routes (OSRM) or calibrated street Haversine (1.35x)
- * - Returns structured fee and distance for UI display & automatic input fill
+ * Calculates delivery fee given a mandatory CEP plus optional number and complement
+ * Rate: R$ 2,50 por KM
+ * Radius warning: distanceKm > 15 km
  */
-export const calculateDeliveryFee = async (
-  inputAddress: string
+export const calculateDeliveryByCep = async (
+  rawCep: string,
+  streetNumber?: string,
+  complement?: string
 ): Promise<DeliveryCalculationResult> => {
-  const trimmed = inputAddress.trim();
-  if (!trimmed) {
+  const cleanCep = rawCep.replace(/\D/g, '');
+  if (cleanCep.length !== 8) {
     return {
       success: false,
       distanceKm: 0,
       fee: 0,
       feeFormatted: '0,00',
-      explanation: 'Informe o endereço ou CEP do cliente para calcular.',
+      explanation: 'Digite um CEP válido com 8 dígitos para calcular o frete.',
+      isOverRadius: false,
       source: 'fallback',
-      error: 'Endereço vazio',
+      error: 'CEP inválido ou incompleto',
     };
   }
 
-  // 1. Check if user typed or included a CEP (8 consecutive digits or 00000-000)
-  const cepMatch = trimmed.match(/\b\d{5}-?\d{3}\b/);
-  let resolvedAddressStr: string | undefined;
-  let targetSearchQuery = trimmed;
+  // 1. Fetch CEP details
+  const cepData = await fetchAddressByCep(cleanCep);
+  const formattedCep = formatCepString(cleanCep);
 
-  if (cepMatch) {
-    const cepInfo = await fetchAddressByCep(cepMatch[0]);
-    if (cepInfo && cepInfo.full) {
-      resolvedAddressStr = cepInfo.full;
-      // Search with resolved address
-      targetSearchQuery = `${cepInfo.street || ''}, ${cepInfo.neighborhood || ''}, São Paulo - SP`;
-    }
+  let targetSearchQuery = '';
+  let street = cepData?.street || '';
+  let neighborhood = cepData?.neighborhood || '';
+  let city = cepData?.city || 'São Paulo';
+  let state = cepData?.state || 'SP';
+
+  if (cepData && cepData.street) {
+    targetSearchQuery = `${cepData.street}${streetNumber ? ' ' + streetNumber : ''}, ${cepData.neighborhood}, ${cepData.city} - ${cepData.state}`;
+  } else if (cepData && cepData.neighborhood) {
+    targetSearchQuery = `${cepData.neighborhood}, ${cepData.city} - ${cepData.state}`;
+  } else {
+    targetSearchQuery = `CEP ${formattedCep}, São Paulo - SP, Brasil`;
   }
+
+  // Construct full formatted address
+  const fullAddressParts = [
+    street ? (streetNumber ? `${street}, ${streetNumber}` : street) : (streetNumber ? `Nº ${streetNumber}` : ''),
+    complement ? complement.trim() : '',
+    neighborhood,
+    city && state ? `${city} - ${state}` : 'São Paulo - SP',
+    `CEP ${formattedCep}`,
+  ].filter(Boolean);
+  const resolvedAddress = fullAddressParts.join(', ');
 
   // 2. Geocode destination address
   let geo = await geocodeAddress(targetSearchQuery);
-
-  // If failed and had a resolved address from CEP, try searching just with neighborhood/city
-  if (!geo && resolvedAddressStr) {
-    geo = await geocodeAddress(resolvedAddressStr);
+  if (!geo && neighborhood) {
+    geo = await geocodeAddress(`${neighborhood}, ${city} - ${state}, Brasil`);
+  }
+  if (!geo) {
+    geo = await geocodeAddress(`CEP ${cleanCep}, São Paulo, Brasil`);
   }
 
-  // 3. If geocoded successfully, calculate distance
+  // 3. Distance calculation
   if (geo) {
     let finalDistanceKm: number | null = await getDrivingRouteDistanceKm(geo.lat, geo.lng);
     let source: DeliveryCalculationResult['source'] = 'driving_route';
 
-    // Fallback to Haversine × 1.35 (urban road factor) if OSRM was unavailable
+    // Fallback to calibrated Haversine if driving service was unreachable
     if (finalDistanceKm === null || finalDistanceKm <= 0) {
       const straightLineKm = calculateHaversineDistanceKm(
         STORE_INFO.coordinates.lat,
@@ -272,18 +343,15 @@ export const calculateDeliveryFee = async (
         geo.lat,
         geo.lng
       );
-      // City driving distance is on average ~35% longer than straight line in São Paulo
       finalDistanceKm = parseFloat(Math.max(0.5, straightLineKm * 1.35).toFixed(1));
       source = 'haversine_estimate';
     }
 
-    // Minimum distance display 0.5 km
     const distanceKm = Math.max(0.5, finalDistanceKm);
-    // Formula: Distância × R$ 2,50
     const rawFee = distanceKm * STORE_INFO.pricePerKm;
-    // Round to 2 decimals
     const fee = parseFloat(rawFee.toFixed(2));
     const feeFormatted = formatDecimalFee(fee);
+    const isOverRadius = distanceKm > STORE_INFO.maxStandardRadiusKm;
     const explanation = `${distanceKm.toFixed(1).replace('.', ',')} km × R$ 2,50/km = R$ ${feeFormatted}`;
 
     return {
@@ -292,50 +360,63 @@ export const calculateDeliveryFee = async (
       fee,
       feeFormatted,
       explanation,
-      resolvedAddress: resolvedAddressStr,
+      isOverRadius,
+      resolvedAddress,
+      street,
+      neighborhood,
+      city,
+      state,
       source,
     };
   }
 
-  // 4. Fallback if geocoding failed (e.g. partial neighborhood or offline)
-  // Check CEP prefix for São Paulo south zone approximation
-  const digitsOnly = trimmed.replace(/\D/g, '');
-  if (digitsOnly.length >= 5) {
-    const prefix5 = digitsOnly.slice(0, 5);
-    let estimatedKm = 3.0; // default local radius
-    if (prefix5.startsWith('058')) {
-      estimatedKm = 2.0; // Capão Redondo / Cohab Adventista local
-    } else if (prefix5.startsWith('057')) {
-      estimatedKm = 5.0; // Campo Limpo
-    } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
-      estimatedKm = 7.0; // Santo Amaro / Grajaú
-    } else if (prefix5.startsWith('06')) {
-      estimatedKm = 8.5; // Taboão / Embu / Itapecerica
-    }
-
-    const fee = parseFloat((estimatedKm * STORE_INFO.pricePerKm).toFixed(2));
-    const feeFormatted = formatDecimalFee(fee);
-    return {
-      success: true,
-      distanceKm: estimatedKm,
-      fee,
-      feeFormatted,
-      explanation: `~${estimatedKm.toFixed(1).replace('.', ',')} km (estimado por região) × R$ 2,50/km = R$ ${feeFormatted}`,
-      resolvedAddress: resolvedAddressStr,
-      source: 'cep_estimate',
-    };
+  // 4. Fallback estimation by CEP prefix (São Paulo zones)
+  const prefix5 = cleanCep.slice(0, 5);
+  let estimatedKm = 3.5;
+  if (prefix5.startsWith('058')) {
+    estimatedKm = 2.0; // Cohab Adventista / Capão Redondo local
+  } else if (prefix5.startsWith('057')) {
+    estimatedKm = 5.0; // Campo Limpo
+  } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
+    estimatedKm = 7.5; // Santo Amaro / Grajaú
+  } else if (prefix5.startsWith('06')) {
+    estimatedKm = 8.5; // Taboão da Serra / Embu
+  } else if (prefix5.startsWith('01') || prefix5.startsWith('02') || prefix5.startsWith('03')) {
+    estimatedKm = 18.0; // Centro / Zona Norte / Zona Leste (> 15 km)
   }
 
-  // Last resort default local estimate
-  const defaultKm = 3.0;
-  const defaultFee = parseFloat((defaultKm * STORE_INFO.pricePerKm).toFixed(2));
+  const rawFee = estimatedKm * STORE_INFO.pricePerKm;
+  const fee = parseFloat(rawFee.toFixed(2));
+  const feeFormatted = formatDecimalFee(fee);
+  const isOverRadius = estimatedKm > STORE_INFO.maxStandardRadiusKm;
+  const explanation = `~${estimatedKm.toFixed(1).replace('.', ',')} km (estimado) × R$ 2,50/km = R$ ${feeFormatted}`;
+
   return {
-    success: false,
-    distanceKm: defaultKm,
-    fee: defaultFee,
-    feeFormatted: formatDecimalFee(defaultFee),
-    explanation: `Não foi possível localizar o ponto exato. Sugestão base (~3 km × R$ 2,50 = R$ ${formatDecimalFee(defaultFee)}), ou digite o valor desejado.`,
-    source: 'fallback',
-    error: 'Endereço não localizado',
+    success: true,
+    distanceKm: estimatedKm,
+    fee,
+    feeFormatted,
+    explanation,
+    isOverRadius,
+    resolvedAddress,
+    street,
+    neighborhood,
+    city,
+    state,
+    source: 'cep_estimate',
   };
+};
+
+/**
+ * Backward compatibility wrapper for generic query strings
+ */
+export const calculateDeliveryFee = async (
+  inputAddress: string
+): Promise<DeliveryCalculationResult> => {
+  const trimmed = inputAddress.trim();
+  const cepMatch = trimmed.match(/\b\d{5}-?\d{3}\b/) || trimmed.match(/\b\d{8}\b/);
+  if (cepMatch) {
+    return calculateDeliveryByCep(cepMatch[0]);
+  }
+  return calculateDeliveryByCep(trimmed.replace(/\D/g, ''));
 };
