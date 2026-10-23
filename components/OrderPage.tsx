@@ -20,15 +20,20 @@ const parsePrice = (priceStr: string): number => {
   return isNaN(val) ? 0 : val;
 };
 
+// Utility to parse typed shipping fee '5,00' or '10'
+const parseFee = (feeStr: string): number => {
+  if (!feeStr) return 0;
+  const cleaned = feeStr.replace('R$', '').replace(/\s/g, '').replace(',', '.');
+  const val = parseFloat(cleaned);
+  return isNaN(val) || val < 0 ? 0 : val;
+};
+
 // Utility to format price number to 'R$ 12,00'
 const formatPrice = (val: number): string => {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
 // Get greeting according to São Paulo time:
-// 00:00 às 12:00 -> Bom dia
-// 13:00 às 18:00 -> Boa tarde
-// 19:00 às 23:59 -> Boa noite
 export const getTimeGreeting = (): string => {
   try {
     const parts = new Intl.DateTimeFormat('pt-BR', {
@@ -57,6 +62,7 @@ export const getTimeGreeting = (): string => {
 
 const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }) => {
   const storeStatus = useStoreStatus();
+  
   // Map of itemId -> quantity
   const [quantities, setQuantities] = useState<Record<number, number>>(() => {
     if (initialItemId) {
@@ -72,6 +78,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<MenuItem | null>(null);
+
+  // Modalidade de Pedido: Retirada ou Entrega
+  const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>('');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -123,7 +134,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     return list;
   }, [allItems, activeCategory, searchTerm]);
 
-  // Selected items list & totals
+  // Selected items list & subtotal calculations
   const selectedItemsList = useMemo(() => {
     return Object.entries(quantities)
       .map(([idStr, rawQty]) => {
@@ -147,9 +158,20 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     return selectedItemsList.reduce((acc, curr) => acc + curr.quantity, 0);
   }, [selectedItemsList]);
 
-  const totalPrice = useMemo(() => {
+  // Subtotal dos produtos selecionados
+  const subtotalProducts = useMemo(() => {
     return selectedItemsList.reduce((acc, curr) => acc + curr.subtotal, 0);
   }, [selectedItemsList]);
+
+  // Valor do frete (ativo apenas se for modalidade entrega)
+  const deliveryFee = useMemo(() => {
+    return orderType === 'delivery' ? parseFee(deliveryFeeInput) : 0;
+  }, [orderType, deliveryFeeInput]);
+
+  // Valor total final: subtotal + frete
+  const grandTotalPrice = useMemo(() => {
+    return subtotalProducts + deliveryFee;
+  }, [subtotalProducts, deliveryFee]);
 
   // Send WhatsApp order
   const handleSendWhatsApp = () => {
@@ -159,15 +181,30 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     }
 
     const greeting = getTimeGreeting();
-    let message = `${greeting}! Gostaria de fazer um pedido para *RETIRADA NA LOJA* na Tapioca Delegusty:\n\n`;
+    const isDelivery = orderType === 'delivery';
+
+    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
     message += `📋 *ITENS DO PEDIDO:*\n`;
 
     selectedItemsList.forEach((entry) => {
       message += `• ${entry.quantity}x ${entry.item.name} (${entry.item.price} un) = ${formatPrice(entry.subtotal)}\n`;
     });
 
-    message += `\n💰 *VALOR TOTAL:* ${formatPrice(totalPrice)}\n`;
-    message += `📦 *TOTAL DE ITENS:* ${totalItemCount}\n`;
+    message += `\n📦 *TOTAL DE ITENS:* ${totalItemCount} un\n`;
+    message += `💵 *SUBTOTAL DOS PRODUTOS:* ${formatPrice(subtotalProducts)}\n`;
+
+    if (isDelivery) {
+      message += `🛵 *MODALIDADE:* Entrega (Delivery)\n`;
+      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar / A consultar'}\n`;
+      message += `💰 *VALOR TOTAL COM FRETE:* ${formatPrice(grandTotalPrice)}\n`;
+      if (deliveryAddress.trim()) {
+        message += `\n📍 *Endereço de Entrega:* ${deliveryAddress.trim()}\n`;
+      }
+    } else {
+      message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
+      message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
+      message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140\n`;
+    }
 
     if (customerName.trim()) {
       message += `\n👤 *Nome do Cliente:* ${customerName.trim()}\n`;
@@ -176,8 +213,6 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     if (observations.trim()) {
       message += `📝 *Observações:* ${observations.trim()}\n`;
     }
-
-    message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140`;
 
     const whatsappUrl = `https://wa.me/5511922099496?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -191,7 +226,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-orange-800 hover:text-orange-950 font-bold bg-white px-4 py-2 rounded-full shadow-sm hover:shadow transition-all text-sm"
+            className="flex items-center gap-2 text-orange-800 hover:text-orange-950 font-bold bg-white px-4 py-2 rounded-full shadow-sm hover:shadow transition-all text-sm cursor-pointer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -212,7 +247,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             <p className="text-orange-100 text-sm sm:text-base leading-relaxed">
               {storeStatus.isOpen ? (
                 <>
-                  Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. O total é calculado automaticamente e você envia direto para nosso WhatsApp!
+                  Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. Você pode escolher entre <strong>Retirada no Balcão</strong> ou <strong>Entrega (Delivery) com cálculo de frete</strong>!
                 </>
               ) : (
                 <>
@@ -264,95 +299,155 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           </div>
         )}
 
-        {/* Notice Info Box: Retirada vs iFood */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {/* Retirada notice */}
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 font-bold">
-              🏪
-            </div>
+        {/* Modalidade de Pedido: Botão Toggle Retirada vs Entrega */}
+        <div className="bg-white border border-stone-200 rounded-3xl p-4 sm:p-5 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-sm font-bold text-amber-950">Exclusivo para Retirada na Loja</h3>
-              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140.
-              </p>
+              <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
+                Opção de Atendimento
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold text-stone-900 font-ubuntu">
+                Como você deseja receber o pedido?
+              </h2>
+            </div>
+
+            {/* Toggle Button (Retirada vs Entrega) */}
+            <div className="inline-flex p-1 bg-stone-100 border border-stone-300 rounded-2xl w-full sm:w-auto shadow-inner">
+              <button
+                type="button"
+                onClick={() => setOrderType('pickup')}
+                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  orderType === 'pickup'
+                    ? 'bg-orange-600 text-white shadow-md'
+                    : 'text-stone-700 hover:text-stone-950'
+                }`}
+              >
+                <span>🏪 Retirada no Balcão</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType('delivery')}
+                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  orderType === 'delivery'
+                    ? 'bg-orange-600 text-white shadow-md'
+                    : 'text-stone-700 hover:text-stone-950'
+                }`}
+              >
+                <span>🛵 Entrega (Delivery)</span>
+              </button>
             </div>
           </div>
 
-          {/* Delivery on iFood, Keeta & 99Food */}
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="flex items-center -space-x-2 flex-shrink-0">
-                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
-                  <img 
-                    src="https://i.imgur.com/g4cIv92.png" 
-                    alt="iFood" 
-                    className="w-full h-full object-cover rounded-full" 
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      if (!target.src.includes('g4cIv92.jpg')) {
-                        target.src = 'https://i.imgur.com/g4cIv92.jpg';
-                      }
-                    }} 
-                  />
-                </div>
-                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
-                  <img 
-                    src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" 
-                    alt="Keeta" 
-                    className="w-full h-full object-cover rounded-full" 
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/images/keeta-logo.webp';
-                    }} 
-                  />
-                </div>
-                <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-sm bg-white border border-gray-100">
-                  <img 
-                    src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420" 
-                    alt="99Food" 
-                    className="w-full h-full object-cover rounded-full" 
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/logo-99food.png';
-                    }} 
-                  />
-                </div>
+          {/* Conditional block depending on orderType */}
+          {orderType === 'pickup' ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
+                🏪
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-red-950">Quer Entrega em Domicílio?</h3>
-                <p className="text-xs text-red-800 mt-0.5">
-                  Para receber quentinho na sua casa, faça seu pedido pelo iFood, Keeta ou 99Food!
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                  <span>Retirada no Balcão da Loja</span>
+                  <span className="text-[11px] bg-green-600 text-white font-bold px-2 py-0.5 rounded-full">
+                    Frete Grátis
+                  </span>
+                </h3>
+                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                  Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140. Você envia o pedido pelo WhatsApp e retira quentinho na hora combinada!
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap self-end lg:self-center">
-              <a
-                href="https://www.ifood.com.br/delivery/sao-paulo-sp/tapiocas-delegusty-conjunto-habitacional-instituto-adventista/a23a8762-6b06-4ee3-85b0-94ab21a38799?UTM_Medium=share"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
-              >
-                Pedir no iFood
-              </a>
-              <a
-                href="https://url-eu.mykeeta.com/BtpUQ7rz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#FFCC00] hover:bg-[#E6B800] text-stone-900 text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
-              >
-                Pedir na Keeta
-              </a>
-              <a
-                href="https://oia.99app.com/dlp9/47Uaqz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#FF8100] hover:bg-[#E67400] text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm"
-              >
-                Pedir no 99Food
-              </a>
+          ) : (
+            <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
+                  🛵
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
+                    <span>Entrega Direta (Delivery)</span>
+                    <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
+                      Cálculo de Frete
+                    </span>
+                  </h3>
+                  <p className="text-xs text-stone-600">
+                    Informe o valor do frete e seu endereço. O valor será somado ao valor dos produtos selecionados!
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                {/* Campo digitável do frete com placeholder */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-800 mb-1 flex items-center justify-between">
+                    <span>Taxa de Entrega / Frete:</span>
+                    {deliveryFee > 0 && (
+                      <span className="text-orange-700 font-black text-xs">
+                        + {formatPrice(deliveryFee)}
+                      </span>
+                    )}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-stone-500 font-bold text-sm">
+                      R$
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Digite o valor do frete (ex: 5,00 ou 10,00)"
+                      value={deliveryFeeInput}
+                      onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                      className="w-full pl-11 pr-3 py-2 text-sm font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
+                    />
+                  </div>
+
+                  {/* Sugestões rápidas de frete */}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                    <span className="text-[11px] text-stone-500">Valores rápidos:</span>
+                    {['5,00', '7,00', '10,00', '12,00', '15,00'].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setDeliveryFeeInput(chip)}
+                        className={`text-xs px-2.5 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                          deliveryFeeInput === chip
+                            ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                            : 'bg-white text-stone-700 border-stone-300 hover:bg-orange-100 hover:border-orange-300'
+                        }`}
+                      >
+                        R$ {chip}
+                      </button>
+                    ))}
+                    {deliveryFeeInput && (
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryFeeInput('')}
+                        className="text-[11px] text-red-500 hover:underline ml-auto cursor-pointer"
+                      >
+                        Zerar frete
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Endereço de Entrega */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-800 mb-1">
+                    Endereço de Entrega (Rua, Nº, Bairro, Complemento):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Rua das Flores, 123, Bloco B - Apto 42, Bairro..."
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                  />
+                  <p className="text-[11px] text-stone-500 mt-1">
+                    Você também pode confirmar os detalhes do endereço diretamente pelo WhatsApp após enviar.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Category Filters & Search */}
@@ -361,7 +456,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <button
               onClick={() => setActiveCategory('all')}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeCategory === 'all'
                   ? 'bg-orange-600 text-white shadow-md'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -371,7 +466,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </button>
             <button
               onClick={() => setActiveCategory('salgadas')}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeCategory === 'salgadas'
                   ? 'bg-orange-600 text-white shadow-md'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -381,7 +476,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </button>
             <button
               onClick={() => setActiveCategory('doces')}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeCategory === 'doces'
                   ? 'bg-orange-600 text-white shadow-md'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -391,7 +486,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </button>
             <button
               onClick={() => setActiveCategory('bebidas')}
-              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
+              className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 activeCategory === 'bebidas'
                   ? 'bg-orange-600 text-white shadow-md'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -414,7 +509,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs font-bold"
+                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -432,7 +527,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
               <button
                 type="button"
                 onClick={() => { setSearchTerm(''); setActiveCategory('all'); }}
-                className="mt-4 px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl hover:bg-orange-700 transition-colors"
+                className="mt-4 px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl hover:bg-orange-700 transition-colors cursor-pointer"
               >
                 Ver todos os sabores
               </button>
@@ -521,7 +616,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                         <button
                           type="button"
                           onClick={() => setSelectedDetailItem(item)}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors py-0.5"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-orange-600 hover:text-orange-800 transition-colors py-0.5 cursor-pointer"
                         >
                           <span>🔍 Ver detalhes e fotos</span>
                         </button>
@@ -609,11 +704,20 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                       {totalItemCount}
                     </div>
                     <div>
-                      <div className="text-xs text-stone-500 uppercase tracking-wider font-semibold">
-                        {totalItemCount === 1 ? '1 item selecionado' : `${totalItemCount} itens selecionados`}
+                      <div className="text-xs text-stone-500 uppercase tracking-wider font-semibold flex items-center gap-1.5">
+                        <span>{totalItemCount === 1 ? '1 item' : `${totalItemCount} itens`}</span>
+                        <span>•</span>
+                        <span className="font-bold text-orange-800">
+                          {orderType === 'delivery' ? '🛵 Entrega' : '🏪 Retirada'}
+                        </span>
+                        {orderType === 'delivery' && deliveryFee > 0 && (
+                          <span className="text-xs text-stone-600">
+                            (+ {formatPrice(deliveryFee)} frete)
+                          </span>
+                        )}
                       </div>
                       <div className="text-xl sm:text-2xl font-black text-stone-900">
-                        Total: <span className="text-orange-700">{formatPrice(totalPrice)}</span>
+                        Total: <span className="text-orange-700">{formatPrice(grandTotalPrice)}</span>
                       </div>
                     </div>
                   </div>
@@ -622,7 +726,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <button
                       type="button"
                       onClick={() => setShowSummaryDrawer(true)}
-                      className="sm:hidden text-xs font-bold text-orange-700 underline"
+                      className="sm:hidden text-xs font-bold text-orange-700 underline cursor-pointer"
                     >
                       Ver Resumo
                     </button>
@@ -716,11 +820,16 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
               <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-5 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-bold font-ubuntu">Confirmar e Enviar Pedido</h3>
-                  <p className="text-xs text-orange-100">Retirada na loja • Travessa Casca Preciosa, 54</p>
+                  <p className="text-xs text-orange-100">
+                    {orderType === 'delivery'
+                      ? 'Entrega em Domicílio (com Frete)'
+                      : 'Retirada na loja • Travessa Casca Preciosa, 54'}
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowSummaryDrawer(false)}
-                  className="p-2 rounded-full hover:bg-white/20 transition-colors text-white"
+                  className="p-2 rounded-full hover:bg-white/20 transition-colors text-white cursor-pointer"
+                  aria-label="Fechar resumo"
                 >
                   ✕
                 </button>
@@ -728,8 +837,98 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
               {/* Body */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {/* Modalidade Toggle Inside Summary Drawer */}
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1.5 uppercase tracking-wider">
+                    Modalidade de Pedido:
+                  </label>
+                  <div className="bg-stone-100 p-1 rounded-2xl flex items-center border border-stone-300">
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('pickup')}
+                      className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        orderType === 'pickup'
+                          ? 'bg-orange-600 text-white shadow-md'
+                          : 'text-stone-700 hover:text-stone-900'
+                      }`}
+                    >
+                      <span>🏪 Retirada no Balcão</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderType('delivery')}
+                      className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        orderType === 'delivery'
+                          ? 'bg-orange-600 text-white shadow-md'
+                          : 'text-stone-700 hover:text-stone-900'
+                      }`}
+                    >
+                      <span>🛵 Entrega (Delivery)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* If Delivery: Show delivery fee placeholder input and address */}
+                {orderType === 'delivery' && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-bold text-stone-800">
+                          Valor do Frete (R$):
+                        </label>
+                        <span className="text-[11px] text-orange-700 font-semibold">
+                          Somado ao total
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-stone-500 font-bold text-sm">R$</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="Digite o valor do frete (ex: 5,00 ou 10,00)"
+                          value={deliveryFeeInput}
+                          onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 text-sm font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                        {['5,00', '7,00', '10,00', '12,00', '15,00'].map((chip) => (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => setDeliveryFeeInput(chip)}
+                            className={`text-xs px-2 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                              deliveryFeeInput === chip
+                                ? 'bg-orange-600 text-white border-orange-600'
+                                : 'bg-white text-stone-700 border-stone-300 hover:bg-orange-100'
+                            }`}
+                          >
+                            R$ {chip}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-800 mb-1">
+                        Endereço de Entrega:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Rua, número, complemento, bairro..."
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Items List */}
-                <div className="border border-stone-200 rounded-2xl p-3 bg-stone-50 space-y-2 max-h-48 overflow-y-auto">
+                <div className="border border-stone-200 rounded-2xl p-3 bg-stone-50 space-y-2 max-h-40 overflow-y-auto">
+                  <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1">
+                    Itens Selecionados ({totalItemCount} un):
+                  </div>
                   {selectedItemsList.map((entry) => (
                     <div key={entry.item.id} className="flex justify-between items-center text-xs py-1 border-b border-stone-200 last:border-0">
                       <div className="flex-1 min-w-0 pr-2">
@@ -747,7 +946,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Seu Nome (opcional - para identificar na retirada):
+                      Seu Nome (para identificação):
                     </label>
                     <input
                       type="text"
@@ -772,10 +971,28 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                   </div>
                 </div>
 
-                {/* Total */}
-                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex justify-between items-baseline">
-                  <span className="text-sm font-bold text-stone-700">Total a Pagar na Retirada:</span>
-                  <span className="text-2xl font-black text-orange-700">{formatPrice(totalPrice)}</span>
+                {/* Totals Breakdown */}
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 space-y-1.5">
+                  <div className="flex justify-between items-center text-xs text-stone-600">
+                    <span>Subtotal dos Produtos:</span>
+                    <span className="font-bold text-stone-800">{formatPrice(subtotalProducts)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-stone-600">
+                    <span>{orderType === 'delivery' ? 'Taxa de Entrega (Frete):' : 'Frete / Retirada:'}</span>
+                    <span className={`font-bold ${orderType === 'delivery' ? 'text-orange-700' : 'text-green-700'}`}>
+                      {orderType === 'delivery'
+                        ? deliveryFee > 0
+                          ? `+ ${formatPrice(deliveryFee)}`
+                          : 'R$ 0,00'
+                        : 'Grátis (Retirada)'}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-orange-200 flex justify-between items-baseline">
+                    <span className="text-sm font-bold text-stone-900">
+                      {orderType === 'delivery' ? 'Total com Frete:' : 'Total a Pagar na Retirada:'}
+                    </span>
+                    <span className="text-2xl font-black text-orange-700">{formatPrice(grandTotalPrice)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -803,7 +1020,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 <button
                   type="button"
                   onClick={() => setShowSummaryDrawer(false)}
-                  className="w-full py-2 text-xs font-bold text-stone-500 hover:text-stone-700"
+                  className="w-full py-2 text-xs font-bold text-stone-500 hover:text-stone-700 cursor-pointer"
                 >
                   Continuar escolhendo itens
                 </button>
@@ -811,6 +1028,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             </div>
           </div>
         )}
+
         {/* Product Details Modal */}
         {selectedDetailItem && (
           <ProductDetailModal
@@ -828,8 +1046,12 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           items={selectedItemsList}
           customerName={customerName}
           observations={observations}
-          totalPrice={totalPrice}
+          totalPrice={grandTotalPrice}
+          subtotalItems={subtotalProducts}
           totalItemCount={totalItemCount}
+          orderType={orderType}
+          deliveryFee={deliveryFee}
+          deliveryAddress={deliveryAddress}
         />
       </div>
     </div>

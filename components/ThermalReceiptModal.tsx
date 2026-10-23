@@ -15,10 +15,14 @@ interface ThermalReceiptModalProps {
   items: ReceiptItemEntry[];
   customerName: string;
   observations: string;
-  totalPrice: number;
+  totalPrice: number; // Valor Total final (com frete quando aplicável)
+  subtotalItems?: number; // Subtotal dos produtos
   totalItemCount: number;
   orderNumber?: string;
   orderDate?: Date;
+  orderType?: 'pickup' | 'delivery';
+  deliveryFee?: number;
+  deliveryAddress?: string;
 }
 
 // Utility to format price
@@ -31,22 +35,32 @@ export const generateThermalReceiptHtml = (data: {
   items: ReceiptItemEntry[];
   customerName: string;
   observations: string;
+  subtotalItems: number;
+  deliveryFee: number;
   totalPrice: number;
   totalItemCount: number;
   orderNumber: string;
   dateStr: string;
   timeStr: string;
+  orderType?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
 }): string => {
   const {
     items,
     customerName,
     observations,
+    subtotalItems,
+    deliveryFee,
     totalPrice,
     totalItemCount,
     orderNumber,
     dateStr,
     timeStr,
+    orderType = 'pickup',
+    deliveryAddress = '',
   } = data;
+
+  const isDelivery = orderType === 'delivery';
 
   const itemsHtml = items
     .map(
@@ -188,7 +202,9 @@ export const generateThermalReceiptHtml = (data: {
         <div class="subtitle">O Sabor Autêntico da Tapioca</div>
         <div style="font-size: 10px;">WhatsApp: (11) 92209-9496</div>
         <div class="order-badge">PEDIDO #${orderNumber}</div>
-        <div style="font-size: 11px; font-weight: bold;">*** RETIRADA NO BALCÃO ***</div>
+        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">
+          ${isDelivery ? '*** ENTREGA / DELIVERY ***' : '*** RETIRADA NO BALCÃO ***'}
+        </div>
       </div>
 
       <div class="divider"></div>
@@ -200,12 +216,22 @@ export const generateThermalReceiptHtml = (data: {
         </tr>
         <tr>
           <td class="bold">CLIENTE:</td>
-          <td class="right bold">${customerName.trim() || 'NÃO INFORMADO (BALCÃO)'}</td>
+          <td class="right bold">${customerName.trim() || (isDelivery ? 'NÃO INFORMADO' : 'NÃO INFORMADO (BALCÃO)')}</td>
         </tr>
         <tr>
-          <td class="bold">TIPO:</td>
-          <td class="right">RETIRADA NA LOJA</td>
+          <td class="bold">MODALIDADE:</td>
+          <td class="right bold">${isDelivery ? '🛵 ENTREGA (DELIVERY)' : '🏪 RETIRADA NA LOJA'}</td>
         </tr>
+        ${
+          isDelivery && deliveryAddress.trim()
+            ? `
+        <tr>
+          <td class="bold" style="vertical-align: top;">ENDEREÇO:</td>
+          <td class="right" style="word-break: break-word;">${deliveryAddress.trim()}</td>
+        </tr>
+        `
+            : ''
+        }
       </table>
 
       <div class="double-divider"></div>
@@ -226,8 +252,12 @@ export const generateThermalReceiptHtml = (data: {
         <span class="bold">${totalItemCount} un</span>
       </div>
       <div class="total-row">
-        <span>SUBTOTAL:</span>
-        <span>${formatPrice(totalPrice)}</span>
+        <span>SUBTOTAL ITENS:</span>
+        <span>${formatPrice(subtotalItems)}</span>
+      </div>
+      <div class="total-row">
+        <span>${isDelivery ? 'TAXA DE ENTREGA (FRETE):' : 'FRETE / RETIRADA:'}</span>
+        <span class="bold">${isDelivery ? formatPrice(deliveryFee) : 'GRÁTIS (BALCÃO)'}</span>
       </div>
       <div class="grand-total">
         <span>VALOR TOTAL:</span>
@@ -248,12 +278,21 @@ export const generateThermalReceiptHtml = (data: {
       <div class="divider"></div>
 
       <div class="footer-note">
-        <div class="bold">LOCAL DE RETIRADA:</div>
-        <div>Travessa Casca Preciosa, 54</div>
-        <div>Cohab Adventista, São Paulo - SP</div>
-        <div>CEP: 05868-140</div>
+        ${
+          isDelivery
+            ? `
+          <div class="bold">PEDIDO PARA ENTREGA EM DOMICÍLIO</div>
+          <div>Aguarde a confirmação pelo WhatsApp</div>
+        `
+            : `
+          <div class="bold">LOCAL DE RETIRADA:</div>
+          <div>Travessa Casca Preciosa, 54</div>
+          <div>Cohab Adventista, São Paulo - SP</div>
+          <div>CEP: 05868-140</div>
+        `
+        }
         <div style="margin-top: 6px; font-weight: bold;">AGRADECEMOS A PREFERÊNCIA!</div>
-        <div>Acompanhe seu pedido pelo WhatsApp</div>
+        <div>WhatsApp: (11) 92209-9496</div>
       </div>
 
       <div class="cut-line">
@@ -269,11 +308,15 @@ export const triggerPrintThermalReceipt = (data: {
   items: ReceiptItemEntry[];
   customerName: string;
   observations: string;
+  subtotalItems: number;
+  deliveryFee: number;
   totalPrice: number;
   totalItemCount: number;
   orderNumber: string;
   dateStr: string;
   timeStr: string;
+  orderType?: 'pickup' | 'delivery';
+  deliveryAddress?: string;
 }) => {
   const html = generateThermalReceiptHtml(data);
 
@@ -327,13 +370,20 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   customerName,
   observations,
   totalPrice,
+  subtotalItems,
   totalItemCount,
   orderNumber,
   orderDate,
+  orderType = 'pickup',
+  deliveryFee = 0,
+  deliveryAddress = '',
 }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
+
+  const calculatedSubtotal = subtotalItems !== undefined ? subtotalItems : totalPrice - (orderType === 'delivery' ? deliveryFee : 0);
+  const isDelivery = orderType === 'delivery';
 
   const now = orderDate || new Date();
   const dateStr = now.toLocaleDateString('pt-BR');
@@ -352,11 +402,15 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       items,
       customerName,
       observations,
+      subtotalItems: calculatedSubtotal,
+      deliveryFee: isDelivery ? deliveryFee : 0,
       totalPrice,
       totalItemCount,
       orderNumber: displayOrderNumber,
       dateStr,
       timeStr,
+      orderType: isDelivery ? 'delivery' : 'pickup',
+      deliveryAddress,
     });
   };
 
@@ -378,13 +432,15 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base text-white">Cupom Térmico (80mm)</h3>
-              <p className="text-xs text-stone-300">Impressora Térmica ou Salvar em PDF</p>
+              <p className="text-xs text-stone-300">
+                {isDelivery ? 'Entrega em Domicílio (com Frete)' : 'Retirada no Balcão'}
+              </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-white/20 text-stone-300 hover:text-white transition-colors"
+            className="p-1.5 rounded-full hover:bg-white/20 text-stone-300 hover:text-white transition-colors cursor-pointer"
             aria-label="Fechar prévia"
           >
             ✕
@@ -395,7 +451,7 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-[11px] text-amber-900 flex items-center gap-2 flex-shrink-0">
           <span className="text-sm">🖨️</span>
           <span>
-            <strong>Dica de Impressão:</strong> Na janela do navegador, selecione sua <strong>impressora térmica 80mm</strong> ou escolha <strong>"Salvar como PDF"</strong> caso não tenha impressora física.
+            <strong>Dica de Impressão:</strong> Selecione sua <strong>impressora térmica 80mm</strong> ou <strong>"Salvar como PDF"</strong> caso não tenha impressora física.
           </span>
         </div>
 
@@ -418,7 +474,9 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               <div className="inline-block border-2 border-stone-900 px-2 py-0.5 my-2 font-black text-xs">
                 PEDIDO #{displayOrderNumber}
               </div>
-              <div className="text-[11px] font-bold text-stone-900">*** RETIRADA NO BALCÃO ***</div>
+              <div className="text-[11px] font-bold text-stone-900">
+                {isDelivery ? '*** ENTREGA / DELIVERY ***' : '*** RETIRADA NO BALCÃO ***'}
+              </div>
             </div>
 
             <div className="border-t border-dashed border-stone-400 my-2"></div>
@@ -431,13 +489,19 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               <div className="flex justify-between">
                 <span className="font-bold">CLIENTE:</span>
                 <span className="font-bold truncate max-w-[170px] text-right">
-                  {customerName.trim() || 'Balcão / Retirada'}
+                  {customerName.trim() || (isDelivery ? 'Cliente Delivery' : 'Balcão / Retirada')}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="font-bold">TIPO:</span>
-                <span>Retirada na Loja</span>
+                <span className="font-bold">MODALIDADE:</span>
+                <span className="font-bold">{isDelivery ? 'Entrega (Delivery)' : 'Retirada na Loja'}</span>
               </div>
+              {isDelivery && deliveryAddress.trim() && (
+                <div className="pt-1 border-t border-dotted border-stone-300">
+                  <span className="font-bold block">ENDEREÇO:</span>
+                  <div className="text-stone-700 break-words">{deliveryAddress.trim()}</div>
+                </div>
+              )}
             </div>
 
             <div className="border-t-2 border-dashed border-stone-800 my-2.5"></div>
@@ -472,8 +536,12 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
                 <span className="font-bold">{totalItemCount} un</span>
               </div>
               <div className="flex justify-between">
-                <span>SUBTOTAL:</span>
-                <span>{formatPrice(totalPrice)}</span>
+                <span>SUBTOTAL ITENS:</span>
+                <span>{formatPrice(calculatedSubtotal)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{isDelivery ? 'TAXA ENTREGA (FRETE):' : 'FRETE / RETIRADA:'}</span>
+                <span className="font-bold">{isDelivery ? formatPrice(deliveryFee) : 'GRÁTIS'}</span>
               </div>
               <div className="flex justify-between font-black text-sm text-stone-950 pt-1 border-t-2 border-stone-900 mt-1">
                 <span>VALOR TOTAL:</span>
@@ -493,10 +561,19 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
 
             {/* Footer info */}
             <div className="text-center text-[10px] text-stone-600 leading-tight space-y-0.5">
-              <div className="font-bold text-stone-900">LOCAL DE RETIRADA:</div>
-              <div>Travessa Casca Preciosa, 54</div>
-              <div>Cohab Adventista, São Paulo - SP</div>
-              <div>CEP: 05868-140</div>
+              {isDelivery ? (
+                <>
+                  <div className="font-bold text-stone-900">ENTREGA EM DOMICÍLIO</div>
+                  <div>Confira os itens no ato da entrega</div>
+                </>
+              ) : (
+                <>
+                  <div className="font-bold text-stone-900">LOCAL DE RETIRADA:</div>
+                  <div>Travessa Casca Preciosa, 54</div>
+                  <div>Cohab Adventista, São Paulo - SP</div>
+                  <div>CEP: 05868-140</div>
+                </>
+              )}
               <div className="font-bold text-stone-900 mt-2">AGRADECEMOS A PREFERÊNCIA!</div>
             </div>
 
@@ -519,7 +596,7 @@ const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="py-3 px-4 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-2xl text-sm transition-colors"
+            className="py-3 px-4 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-2xl text-sm transition-colors cursor-pointer"
           >
             Fechar
           </button>

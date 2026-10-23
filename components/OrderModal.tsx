@@ -17,12 +17,6 @@ const ShoppingBagIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-const StoreIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.25A2.25 2.25 0 010 18.75V10.5m13.5 10.5h8.25A2.25 2.25 0 0024 18.75V10.5M2.25 10.5l9.75-6.75 9.75 6.75M2.25 10.5v8.25" />
-  </svg>
-);
-
 const TrashIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" {...props}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
@@ -43,15 +37,20 @@ const parsePrice = (priceStr: string): number => {
   return isNaN(val) ? 0 : val;
 };
 
+// Utility to parse typed shipping fee '5,00' or '10'
+const parseFee = (feeStr: string): number => {
+  if (!feeStr) return 0;
+  const cleaned = feeStr.replace('R$', '').replace(/\s/g, '').replace(',', '.');
+  const val = parseFloat(cleaned);
+  return isNaN(val) || val < 0 ? 0 : val;
+};
+
 // Utility to format price number to 'R$ 12,00'
 const formatPrice = (val: number): string => {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
 // Get greeting according to São Paulo time:
-// 00:00 às 12:00 -> Bom dia
-// 13:00 às 18:00 -> Boa tarde
-// 19:00 às 23:59 -> Boa noite
 export const getTimeGreeting = (): string => {
   try {
     const parts = new Intl.DateTimeFormat('pt-BR', {
@@ -98,6 +97,11 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const [observations, setObservations] = useState('');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+
+  // Modalidade: Retirada vs Entrega
+  const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
+  const [deliveryFeeInput, setDeliveryFeeInput] = useState<string>('');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
 
   // If initial item changes, add it
   React.useEffect(() => {
@@ -197,9 +201,17 @@ const OrderModal: React.FC<OrderModalProps> = ({
     return selectedItemsList.reduce((acc, curr) => acc + curr.quantity, 0);
   }, [selectedItemsList]);
 
-  const totalPrice = useMemo(() => {
+  const subtotalProducts = useMemo(() => {
     return selectedItemsList.reduce((acc, curr) => acc + curr.subtotal, 0);
   }, [selectedItemsList]);
+
+  const deliveryFee = useMemo(() => {
+    return orderType === 'delivery' ? parseFee(deliveryFeeInput) : 0;
+  }, [orderType, deliveryFeeInput]);
+
+  const grandTotalPrice = useMemo(() => {
+    return subtotalProducts + deliveryFee;
+  }, [subtotalProducts, deliveryFee]);
 
   // Send WhatsApp order
   const handleSendWhatsApp = () => {
@@ -209,16 +221,30 @@ const OrderModal: React.FC<OrderModalProps> = ({
     }
 
     const greeting = getTimeGreeting();
-    
-    let message = `${greeting}! Gostaria de fazer um pedido para *RETIRADA NA LOJA* na Tapioca Delegusty:\n\n`;
+    const isDelivery = orderType === 'delivery';
+
+    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
     message += `📋 *ITENS DO PEDIDO:*\n`;
 
     selectedItemsList.forEach((entry) => {
       message += `• ${entry.quantity}x ${entry.item.name} (${entry.item.price} cada) = ${formatPrice(entry.subtotal)}\n`;
     });
 
-    message += `\n💰 *VALOR TOTAL:* ${formatPrice(totalPrice)}\n`;
-    message += `📦 *TOTAL DE ITENS:* ${totalItemCount}\n`;
+    message += `\n📦 *TOTAL DE ITENS:* ${totalItemCount} un\n`;
+    message += `💵 *SUBTOTAL DOS PRODUTOS:* ${formatPrice(subtotalProducts)}\n`;
+
+    if (isDelivery) {
+      message += `🛵 *MODALIDADE:* Entrega (Delivery)\n`;
+      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar / A consultar'}\n`;
+      message += `💰 *VALOR TOTAL COM FRETE:* ${formatPrice(grandTotalPrice)}\n`;
+      if (deliveryAddress.trim()) {
+        message += `\n📍 *Endereço de Entrega:* ${deliveryAddress.trim()}\n`;
+      }
+    } else {
+      message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
+      message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
+      message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140\n`;
+    }
 
     if (customerName.trim()) {
       message += `\n👤 *Nome do Cliente:* ${customerName.trim()}\n`;
@@ -227,8 +253,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
     if (observations.trim()) {
       message += `📝 *Observações:* ${observations.trim()}\n`;
     }
-
-    message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140`;
 
     const whatsappUrl = `https://wa.me/5511922099496?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -257,30 +281,37 @@ const OrderModal: React.FC<OrderModalProps> = ({
               <h2 id="order-modal-title" className="text-xl sm:text-2xl font-bold font-ubuntu flex items-center gap-2">
                 Faça o seu Pedido
                 <span className="text-xs bg-orange-800/80 font-normal px-2.5 py-0.5 rounded-full uppercase tracking-wider text-orange-200">
-                  Retirada no Balcão
+                  {orderType === 'delivery' ? 'Entrega em Domicílio' : 'Retirada no Balcão'}
                 </span>
               </h2>
               <p className="text-xs sm:text-sm text-orange-100 font-light">
-                Escolha os sabores, digite as quantidades e envie direto para o nosso WhatsApp!
+                Escolha os sabores, configure a entrega ou retirada e envie direto para o WhatsApp!
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all"
+            className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all cursor-pointer"
             aria-label="Fechar modal de pedido"
           >
             <CloseIcon className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Notice Banners: Retirada vs iFood Delivery */}
+        {/* Notice Banners: Retirada vs Delivery info */}
         <div className="bg-orange-50 border-b border-orange-200 p-3 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm flex-shrink-0">
           <div className="flex items-center gap-2 text-orange-950">
-            <StoreIcon className="w-5 h-5 text-orange-600 flex-shrink-0" />
+            <span className="text-base">{orderType === 'delivery' ? '🛵' : '🏪'}</span>
             <div>
-              <span className="font-bold">Atenção:</span> Pedidos pelo site/WhatsApp são exclusivos para{' '}
-              <strong className="text-orange-700 underline">RETIRADA NA LOJA</strong> (Travessa Casca Preciosa, 54 - Cohab Adventista).
+              {orderType === 'delivery' ? (
+                <span>
+                  Pedido para <strong className="text-orange-700">ENTREGA (DELIVERY)</strong>. O valor do frete é somado ao total.
+                </span>
+              ) : (
+                <span>
+                  Pedido para <strong className="text-orange-700">RETIRADA NA LOJA</strong> (Travessa Casca Preciosa, 54 - Cohab Adventista).
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -289,30 +320,30 @@ const OrderModal: React.FC<OrderModalProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
-              title="Deseja entrega em domicílio? Peça no iFood"
+              title="Pedir pelo iFood"
             >
               <img src="https://i.imgur.com/g4cIv92.png" alt="iFood" className="w-4 h-4 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
-              <span>Entrega no iFood</span>
+              <span>iFood</span>
             </a>
             <a
               href="https://url-eu.mykeeta.com/BtpUQ7rz"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 bg-[#FFCC00] hover:bg-[#E6B800] text-stone-900 font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
-              title="Deseja entrega em domicílio? Peça na Keeta"
+              title="Pedir pela Keeta"
             >
               <img src="https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkzgXbFvdsyiw3NgBcq0sS-0H144BA8Z_626ZwmIe_3UFgOfErxvI3DHV2hCPd07XxRyzblFYyWCmZKwXbRNz5rSRrrjs5hiV53z9rKB1g7TC3D4laADo9WECHCnxgky5IXHQaCXzzRiT1E=s680-w680-h510-rw" alt="Keeta" className="w-4 h-4 rounded-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
-              <span>Entrega na Keeta</span>
+              <span>Keeta</span>
             </a>
             <a
               href="https://oia.99app.com/dlp9/47Uaqz"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 bg-[#FF8100] hover:bg-[#E67400] text-white font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm text-xs"
-              title="Deseja entrega em domicílio? Peça no 99Food"
+              title="Pedir no 99Food"
             >
               <img src="https://lh3.googleusercontent.com/NtNx2nyQjK48xy204TjKl9baFxjgkWT5437f35kyewTYsUauxW9kyJNbQEZ47_pa8JVoIyfUkEYSYNhX4w=w1420" alt="99Food" className="w-4 h-4 rounded-full object-cover bg-white" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
-              <span>Entrega no 99Food</span>
+              <span>99Food</span>
             </a>
           </div>
         </div>
@@ -328,7 +359,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
                   <button
                     onClick={() => { setActiveCategory('all'); setShowOnlySelected(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                       activeCategory === 'all' && !showOnlySelected
                         ? 'bg-orange-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -338,7 +369,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   </button>
                   <button
                     onClick={() => { setActiveCategory('salgadas'); setShowOnlySelected(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                       activeCategory === 'salgadas' && !showOnlySelected
                         ? 'bg-orange-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -348,7 +379,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   </button>
                   <button
                     onClick={() => { setActiveCategory('doces'); setShowOnlySelected(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                       activeCategory === 'doces' && !showOnlySelected
                         ? 'bg-orange-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -358,7 +389,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   </button>
                   <button
                     onClick={() => { setActiveCategory('bebidas'); setShowOnlySelected(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
                       activeCategory === 'bebidas' && !showOnlySelected
                         ? 'bg-orange-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -368,7 +399,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   </button>
                   <button
                     onClick={() => setShowOnlySelected(!showOnlySelected)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1 ${
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer ${
                       showOnlySelected
                         ? 'bg-green-600 text-white'
                         : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
@@ -391,7 +422,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 text-xs"
+                      className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer"
                     >
                       ✕
                     </button>
@@ -428,7 +459,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <input
                           type="checkbox"
-                          id={`check-${item.id}`}
+                          id={`modal-check-${item.id}`}
                           checked={isSelected}
                           onChange={() => handleToggleItem(item)}
                           className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500 cursor-pointer accent-orange-600"
@@ -440,7 +471,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                             className="w-12 h-12 rounded-lg object-cover bg-gray-100 flex-shrink-0"
                           />
                         )}
-                        <label htmlFor={`check-${item.id}`} className="cursor-pointer flex-1 min-w-0">
+                        <label htmlFor={`modal-check-${item.id}`} className="cursor-pointer flex-1 min-w-0">
                           <div className="flex items-baseline gap-2">
                             <span className="text-xs font-bold text-orange-700">#{item.id}</span>
                             <h4 className="text-sm font-bold text-gray-900 truncate">{item.name}</h4>
@@ -464,7 +495,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleQuantityChange(item.id, qty - 1)}
-                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-white hover:text-orange-600 rounded font-bold transition-colors"
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-white hover:text-orange-600 rounded font-bold transition-colors cursor-pointer"
                             aria-label="Diminuir quantidade"
                           >
                             -
@@ -484,7 +515,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleQuantityChange(item.id, qty + 1)}
-                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-white hover:text-orange-600 rounded font-bold transition-colors"
+                            className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-white hover:text-orange-600 rounded font-bold transition-colors cursor-pointer"
                             aria-label="Aumentar quantidade"
                           >
                             +
@@ -506,10 +537,10 @@ const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Order Summary & WhatsApp Dispatch */}
+          {/* Right Column: Order Summary, Toggle & WhatsApp Dispatch */}
           <div className="w-full lg:w-96 bg-white flex flex-col justify-between border-t lg:border-t-0 lg:border-l border-gray-200 p-4 sm:p-5 overflow-y-auto">
             <div>
-              <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-4">
+              <div className="flex items-center justify-between border-b border-gray-200 pb-3 mb-3">
                 <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
                   <ShoppingBagIcon className="w-5 h-5 text-orange-600" />
                   Resumo do Pedido
@@ -517,7 +548,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 {selectedItemsList.length > 0 && (
                   <button
                     onClick={handleClearAll}
-                    className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold"
+                    className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 font-semibold cursor-pointer"
                   >
                     <TrashIcon className="w-3.5 h-3.5" />
                     Limpar
@@ -525,20 +556,107 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 )}
               </div>
 
+              {/* Botão Toggle: Retirada vs Entrega */}
+              <div className="mb-4">
+                <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">
+                  Modalidade do Pedido:
+                </label>
+                <div className="bg-stone-100 p-1 rounded-2xl flex items-center border border-stone-300">
+                  <button
+                    type="button"
+                    onClick={() => setOrderType('pickup')}
+                    className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      orderType === 'pickup'
+                        ? 'bg-orange-600 text-white shadow-sm'
+                        : 'text-stone-700 hover:text-stone-900'
+                    }`}
+                  >
+                    <span>🏪 Retirada</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderType('delivery')}
+                    className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      orderType === 'delivery'
+                        ? 'bg-orange-600 text-white shadow-sm'
+                        : 'text-stone-700 hover:text-stone-900'
+                    }`}
+                  >
+                    <span>🛵 Entrega</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Se entrega, campo com placeholder digitável para o valor do frete */}
+              {orderType === 'delivery' && (
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 mb-4 space-y-2.5">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-stone-800">
+                        Valor do Frete (R$):
+                      </label>
+                      <span className="text-[10px] text-orange-700 font-semibold">
+                        Soma ao total
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-stone-500 font-bold text-xs">R$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="Digite o frete (ex: 5,00 ou 10,00)"
+                        value={deliveryFeeInput}
+                        onChange={(e) => setDeliveryFeeInput(e.target.value)}
+                        className="w-full pl-8 pr-2 py-1.5 text-xs font-bold bg-white border border-orange-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                      {['5,00', '7,00', '10,00', '12,00'].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          onClick={() => setDeliveryFeeInput(chip)}
+                          className={`text-[11px] px-2 py-0.5 rounded-md border font-semibold transition-all cursor-pointer ${
+                            deliveryFeeInput === chip
+                              ? 'bg-orange-600 text-white border-orange-600'
+                              : 'bg-white text-stone-700 border-stone-300 hover:bg-orange-100'
+                          }`}
+                        >
+                          R$ {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-stone-800 mb-1">
+                      Endereço de Entrega:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Rua, número, complemento, bairro..."
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Items List in Summary */}
               {selectedItemsList.length === 0 ? (
-                <div className="py-6 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 mb-4">
-                  <p className="text-sm font-medium">Nenhum item selecionado</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Marque os sabores ao lado e digite as quantidades.
+                <div className="py-5 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200 mb-4">
+                  <p className="text-xs font-medium">Nenhum item selecionado</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Marque os sabores ao lado e defina as quantidades.
                   </p>
                 </div>
               ) : (
-                <div className="max-h-48 overflow-y-auto space-y-2 mb-4 pr-1">
+                <div className="max-h-36 overflow-y-auto space-y-1.5 mb-3 pr-1">
                   {selectedItemsList.map((entry) => (
                     <div
                       key={entry.item.id}
-                      className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100"
+                      className="flex items-center justify-between text-xs py-1 border-b border-gray-100"
                     >
                       <div className="flex-1 min-w-0 pr-2">
                         <span className="font-bold text-orange-700">{entry.quantity}x</span>{' '}
@@ -553,17 +671,17 @@ const OrderModal: React.FC<OrderModalProps> = ({
               )}
 
               {/* Customer Input Fields */}
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2.5 pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Seu Nome (para identificação na retirada):
+                    Seu Nome:
                   </label>
                   <input
                     type="text"
                     placeholder="Ex: Maria Silva"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-1.5 text-xs sm:text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
 
@@ -576,36 +694,48 @@ const OrderModal: React.FC<OrderModalProps> = ({
                     placeholder="Ex: Sem orégano, caprichar no leite condensado..."
                     value={observations}
                     onChange={(e) => setObservations(e.target.value)}
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                    className="w-full px-3 py-1.5 text-xs sm:text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Total calculation and WhatsApp Submit Button */}
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
-                <span>Total de itens:</span>
-                <span className="font-semibold">{totalItemCount} un</span>
-              </div>
-              <div className="flex justify-between items-baseline mb-4">
-                <span className="text-sm font-bold text-gray-800">Total a Pagar:</span>
-                <span className="text-2xl font-black text-orange-700">{formatPrice(totalPrice)}</span>
+            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between items-center text-gray-500">
+                  <span>Subtotal ({totalItemCount} un):</span>
+                  <span className="font-semibold text-gray-700">{formatPrice(subtotalProducts)}</span>
+                </div>
+                <div className="flex justify-between items-center text-gray-500">
+                  <span>{orderType === 'delivery' ? 'Frete / Entrega:' : 'Modalidade:'}</span>
+                  <span className={`font-bold ${orderType === 'delivery' ? 'text-orange-700' : 'text-green-700'}`}>
+                    {orderType === 'delivery'
+                      ? deliveryFee > 0
+                        ? `+ ${formatPrice(deliveryFee)}`
+                        : 'R$ 0,00'
+                      : 'Grátis (Retirada)'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-baseline pt-1 border-t border-gray-100">
+                  <span className="text-sm font-bold text-gray-800">Total a Pagar:</span>
+                  <span className="text-xl sm:text-2xl font-black text-orange-700">{formatPrice(grandTotalPrice)}</span>
+                </div>
               </div>
 
               {/* WhatsApp Button */}
-              <div className="space-y-2">
+              <div className="space-y-1.5 pt-1">
                 <button
                   type="button"
                   onClick={handleSendWhatsApp}
                   disabled={selectedItemsList.length === 0}
-                  className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg transition-all transform ${
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg transition-all transform text-sm ${
                     selectedItemsList.length > 0
                       ? 'bg-green-600 hover:bg-green-700 hover:scale-[1.02] shadow-green-200 cursor-pointer'
                       : 'bg-gray-300 cursor-not-allowed opacity-70'
                   }`}
                 >
-                  <WhatsAppIcon className="w-6 h-6 flex-shrink-0" />
+                  <WhatsAppIcon className="w-5 h-5 flex-shrink-0" />
                   <span>Enviar Pedido pelo WhatsApp</span>
                 </button>
 
@@ -613,7 +743,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   type="button"
                   onClick={() => setShowPrintModal(true)}
                   disabled={selectedItemsList.length === 0}
-                  className={`w-full py-2.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-sm transition-all border ${
+                  className={`w-full py-2 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-xs transition-all border ${
                     selectedItemsList.length > 0
                       ? 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800 shadow-md cursor-pointer'
                       : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-70'
@@ -624,9 +754,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   <span>Imprimir Cupom (80mm / PDF)</span>
                 </button>
               </div>
-              <p className="text-[11px] text-gray-400 text-center mt-2 leading-tight">
-                Será aberta uma mensagem com o cumprimento adequado ao horário e todos os itens do seu pedido.
-              </p>
             </div>
           </div>
         </div>
@@ -638,8 +765,12 @@ const OrderModal: React.FC<OrderModalProps> = ({
           items={selectedItemsList}
           customerName={customerName}
           observations={observations}
-          totalPrice={totalPrice}
+          totalPrice={grandTotalPrice}
+          subtotalItems={subtotalProducts}
           totalItemCount={totalItemCount}
+          orderType={orderType}
+          deliveryFee={deliveryFee}
+          deliveryAddress={deliveryAddress}
         />
       </div>
 
