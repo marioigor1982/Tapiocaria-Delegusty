@@ -1,6 +1,6 @@
 // Utility for calculating delivery distance and shipping fees based on store origin and customer address
 // Store: Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140
-// Rate: R$ 2,50 por KM
+// Rate: R$ 2,50 por KM (Mínimo de R$ 2,50 para até 1 km)
 
 export const STORE_INFO = {
   name: 'Tapioca Delegusty',
@@ -15,9 +15,14 @@ export const STORE_INFO = {
     lat: -23.6667,
     lng: -46.7770,
   },
-  pricePerKm: 2.50, // R$ 2,50 por km estrito solicitado pelo cliente
+  pricePerKm: 2.50, // R$ 2,50 por km
+  minimumFee: 2.50, // Taxa fixa mínima de R$ 2,50 até 1 km
   maxStandardRadiusKm: 15.0, // Raio padrão de 15 km
 };
+
+// Search boundary box for São Paulo (favors Zona Sul/Oeste/Grande SP near store)
+// minlon, maxlat, maxlon, minlat
+const SP_SOUTH_WEST_VIEWBOX = '-46.95,-23.45,-46.55,-23.85';
 
 export interface CepAddressData {
   cep: string;
@@ -32,8 +37,8 @@ export interface DeliveryCalculationResult {
   success: boolean;
   distanceKm: number;
   fee: number;
-  feeFormatted: string; // e.g. "7,50" or "10,00"
-  explanation: string; // e.g. "3,2 km × R$ 2,50 = R$ 8,00"
+  feeFormatted: string; // e.g. "2,50", "4,75" or "10,00"
+  explanation: string; // e.g. "1,9 km × R$ 2,50/km = R$ 4,75"
   isOverRadius: boolean; // true if distanceKm > 15 km
   resolvedAddress?: string;
   street?: string;
@@ -43,6 +48,37 @@ export interface DeliveryCalculationResult {
   source: 'driving_route' | 'haversine_estimate' | 'cep_estimate' | 'fallback';
   error?: string;
 }
+
+// Known approximate coordinates and max plausible radius (km) by CEP prefix around store
+const CEP_PREFIX_MAP: Record<string, { lat: number; lng: number; defaultKm: number; maxPlausibleKm: number }> = {
+  // Cohab Adventista / Loja local
+  '05868': { lat: -23.6667, lng: -46.7770, defaultKm: 0.5, maxPlausibleKm: 2.0 },
+  // Capão Redondo / Parque Fernanda / Cohab Adventista
+  '058': { lat: -23.6700, lng: -46.7800, defaultKm: 1.8, maxPlausibleKm: 6.0 },
+  // Campo Limpo / Jardim Ipê / Pirajussara (Vizinho imediato ao Capão Redondo!)
+  '05797': { lat: -23.6535, lng: -46.7742, defaultKm: 1.9, maxPlausibleKm: 5.0 },
+  '057': { lat: -23.6450, lng: -46.7650, defaultKm: 2.8, maxPlausibleKm: 7.0 },
+  // Vila Sônia / Morumbi
+  '056': { lat: -23.6020, lng: -46.7260, defaultKm: 6.5, maxPlausibleKm: 10.0 },
+  // Butantã / Raposo
+  '055': { lat: -23.5750, lng: -46.7280, defaultKm: 10.0, maxPlausibleKm: 15.0 },
+  // Taboão da Serra (divisa com Campo Limpo)
+  '067': { lat: -23.6260, lng: -46.7580, defaultKm: 5.0, maxPlausibleKm: 9.0 },
+  // Embu das Artes
+  '068': { lat: -23.6490, lng: -46.8520, defaultKm: 8.5, maxPlausibleKm: 13.0 },
+  // Itapecerica da Serra
+  '069': { lat: -23.7170, lng: -46.8490, defaultKm: 9.5, maxPlausibleKm: 15.0 },
+  // Jardim Ângela / M'Boi Mirim
+  '049': { lat: -23.6850, lng: -46.7550, defaultKm: 4.5, maxPlausibleKm: 8.5 },
+  // Socorro / Interlagos / Cidade Dutra
+  '048': { lat: -23.6950, lng: -46.7050, defaultKm: 7.5, maxPlausibleKm: 13.0 },
+  // Santo Amaro
+  '047': { lat: -23.6530, lng: -46.7050, defaultKm: 6.5, maxPlausibleKm: 10.0 },
+  // Campo Belo / Brooklin
+  '046': { lat: -23.6350, lng: -46.6750, defaultKm: 9.0, maxPlausibleKm: 13.0 },
+  // Moema / Itaim Bibi
+  '045': { lat: -23.5950, lng: -46.6750, defaultKm: 11.0, maxPlausibleKm: 16.0 },
+};
 
 // Haversine formula (straight-line distance between two coordinates in km)
 export const calculateHaversineDistanceKm = (
@@ -64,7 +100,7 @@ export const calculateHaversineDistanceKm = (
   return R * c;
 };
 
-// Format BRL number to 2 decimals string with comma (e.g. 7.5 -> "7,50")
+// Format BRL number to 2 decimals string with comma (e.g. 4.75 -> "4,75")
 export const formatDecimalFee = (num: number): string => {
   return num.toFixed(2).replace('.', ',');
 };
@@ -74,33 +110,6 @@ export const formatCepString = (raw: string): string => {
   const digits = raw.replace(/\D/g, '').slice(0, 8);
   if (digits.length <= 5) return digits;
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-};
-
-// Known approximate coordinates for main neighborhoods / zones around Capão Redondo & SP
-const NEIGHBORHOOD_CACHE: Record<string, { lat: number; lng: number }> = {
-  'cohab adventista': { lat: -23.6667, lng: -46.7770 },
-  'instituto adventista': { lat: -23.6667, lng: -46.7770 },
-  'capao redondo': { lat: -23.6719, lng: -46.7794 },
-  'capão redondo': { lat: -23.6719, lng: -46.7794 },
-  'parque do engenho': { lat: -23.6610, lng: -46.7820 },
-  'jardim comercial': { lat: -23.6740, lng: -46.7890 },
-  'valo velho': { lat: -23.6840, lng: -46.7860 },
-  'campo limpo': { lat: -23.6490, lng: -46.7580 },
-  'vila das belezas': { lat: -23.6420, lng: -46.7420 },
-  'jardim sao luis': { lat: -23.6650, lng: -46.7410 },
-  'jardim são luís': { lat: -23.6650, lng: -46.7410 },
-  'santo amaro': { lat: -23.6530, lng: -46.7050 },
-  'socorro': { lat: -23.6860, lng: -46.7120 },
-  'grajau': { lat: -23.7380, lng: -46.6970 },
-  'grajaú': { lat: -23.7380, lng: -46.6970 },
-  'interlagos': { lat: -23.7010, lng: -46.6870 },
-  'itapecerica da serra': { lat: -23.7170, lng: -46.8490 },
-  'embu das artes': { lat: -23.6490, lng: -46.8520 },
-  'embú das artes': { lat: -23.6490, lng: -46.8520 },
-  'taboao da serra': { lat: -23.6260, lng: -46.7580 },
-  'taboão da serra': { lat: -23.6260, lng: -46.7580 },
-  'morumbi': { lat: -23.6030, lng: -46.7180 },
-  'vila andrade': { lat: -23.6330, lng: -46.7320 },
 };
 
 // Look up address details via CEP (ViaCEP with BrasilAPI fallback)
@@ -175,44 +184,31 @@ export const fetchAddressByCep = async (rawCep: string): Promise<CepAddressData 
   return null;
 };
 
-// Geocode query string to { lat, lng } using Nominatim OpenStreetMap
+// Geocode query string to { lat, lng } using Nominatim OpenStreetMap with viewbox bias
 export const geocodeAddress = async (
-  query: string
+  query: string,
+  useViewbox = true
 ): Promise<{ lat: number; lng: number; displayName: string } | null> => {
   try {
     const cleanQuery = query.trim();
     if (!cleanQuery) return null;
 
-    // Check neighborhood cache first
-    const lower = cleanQuery.toLowerCase();
-    for (const [key, coords] of Object.entries(NEIGHBORHOOD_CACHE)) {
-      if (lower.includes(key)) {
-        return {
-          ...coords,
-          displayName: key.toUpperCase(),
-        };
-      }
-    }
+    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      cleanQuery
+    )}&limit=1&countrycodes=br`;
 
-    // Enhance query with São Paulo context if not present
-    let searchQuery = cleanQuery;
-    if (!searchQuery.toLowerCase().includes('são paulo') && !searchQuery.toLowerCase().includes('sp')) {
-      searchQuery += ', São Paulo - SP, Brasil';
-    } else if (!searchQuery.toLowerCase().includes('brasil')) {
-      searchQuery += ', Brasil';
+    if (useViewbox) {
+      url += `&viewbox=${SP_SOUTH_WEST_VIEWBOX}`;
     }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      searchQuery
-    )}&limit=1&countrycodes=br`;
-
     const resp = await fetch(url, {
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
+        'User-Agent': 'TapiocaApp/1.0',
       },
     });
     clearTimeout(timeout);
@@ -271,8 +267,10 @@ export const getDrivingRouteDistanceKm = async (
 
 /**
  * Calculates delivery fee given a mandatory CEP plus optional number and complement
- * Rate: R$ 2,50 por KM
- * Radius warning: distanceKm > 15 km
+ * Rate rule:
+ * - 0,01 km até 1,0 km: R$ 2,50 (taxa fixa mínima por km)
+ * - Acima de 1,1 km em diante: distância em km × R$ 2,50
+ * - Distância > 15 km: ativa aviso de confirmação
  */
 export const calculateDeliveryByCep = async (
   rawCep: string,
@@ -293,27 +291,18 @@ export const calculateDeliveryByCep = async (
     };
   }
 
-  // 1. Fetch CEP details
+  // 1. Fetch CEP details via ViaCEP / BrasilAPI
   const cepData = await fetchAddressByCep(cleanCep);
   const formattedCep = formatCepString(cleanCep);
 
-  let targetSearchQuery = '';
-  let street = cepData?.street || '';
-  let neighborhood = cepData?.neighborhood || '';
-  let city = cepData?.city || 'São Paulo';
-  let state = cepData?.state || 'SP';
-
-  if (cepData && cepData.street) {
-    targetSearchQuery = `${cepData.street}${streetNumber ? ' ' + streetNumber : ''}, ${cepData.neighborhood}, ${cepData.city} - ${cepData.state}`;
-  } else if (cepData && cepData.neighborhood) {
-    targetSearchQuery = `${cepData.neighborhood}, ${cepData.city} - ${cepData.state}`;
-  } else {
-    targetSearchQuery = `CEP ${formattedCep}, São Paulo - SP, Brasil`;
-  }
+  const street = cepData?.street || '';
+  const neighborhood = cepData?.neighborhood || '';
+  const city = cepData?.city || 'São Paulo';
+  const state = cepData?.state || 'SP';
 
   // Construct full formatted address
   const fullAddressParts = [
-    street ? (streetNumber ? `${street}, ${streetNumber}` : street) : (streetNumber ? `Nº ${streetNumber}` : ''),
+    street ? (streetNumber ? `${street}, Nº ${streetNumber}` : street) : (streetNumber ? `Nº ${streetNumber}` : ''),
     complement ? complement.trim() : '',
     neighborhood,
     city && state ? `${city} - ${state}` : 'São Paulo - SP',
@@ -321,16 +310,69 @@ export const calculateDeliveryByCep = async (
   ].filter(Boolean);
   const resolvedAddress = fullAddressParts.join(', ');
 
-  // 2. Geocode destination address
-  let geo = await geocodeAddress(targetSearchQuery);
-  if (!geo && neighborhood) {
-    geo = await geocodeAddress(`${neighborhood}, ${city} - ${state}, Brasil`);
-  }
-  if (!geo) {
-    geo = await geocodeAddress(`CEP ${cleanCep}, São Paulo, Brasil`);
+  // 2. Identify CEP prefix zone parameters to prevent false-positive far-away namesake geocodes
+  let matchedZone: { lat: number; lng: number; defaultKm: number; maxPlausibleKm: number } | null = null;
+  for (const [prefix, zone] of Object.entries(CEP_PREFIX_MAP)) {
+    if (cleanCep.startsWith(prefix)) {
+      matchedZone = zone;
+      break;
+    }
   }
 
-  // 3. Distance calculation
+  // 3. Geocode destination address
+  // CRITICAL FIX: Do NOT include neighborhood in Nominatim search if street is present!
+  // In OSM, OpenStreetMap neighborhoods often differ from Correios (e.g. "Capão Redondo" vs "Jardim Ipê"),
+  // which causes 0 results or false hits 60 km away in Vila Curuçá!
+  let geo: { lat: number; lng: number; displayName: string } | null = null;
+
+  if (street) {
+    // Attempt 1: Street + City + South-West Viewbox
+    geo = await geocodeAddress(`${street}, São Paulo, Brasil`, true);
+
+    // Attempt 2: Strip street type (e.g. "Rua", "Avenida", "Travessa") + City
+    if (!geo) {
+      const cleanStreetName = street.replace(
+        /^(rua|avenida|travessa|alameda|estrada|rodovia|praça|r\.|av\.|tv\.)\s+/i,
+        ''
+      );
+      if (cleanStreetName !== street) {
+        geo = await geocodeAddress(`${cleanStreetName}, São Paulo, Brasil`, true);
+      }
+    }
+  }
+
+  // Sanity check candidate coordinates against CEP zone if matched
+  if (geo && matchedZone) {
+    const straightKm = calculateHaversineDistanceKm(
+      STORE_INFO.coordinates.lat,
+      STORE_INFO.coordinates.lng,
+      geo.lat,
+      geo.lng
+    );
+    // If the geocoded point is impossibly far from what this CEP prefix allows, reject false namesake
+    if (straightKm > matchedZone.maxPlausibleKm) {
+      console.warn(
+        `Geocode rejected for CEP ${cleanCep}: candidate ${geo.displayName} was ${straightKm.toFixed(1)} km away, max plausible is ${matchedZone.maxPlausibleKm} km`
+      );
+      geo = null;
+    }
+  }
+
+  // Attempt 3: If street geocoding failed or was rejected, use matched zone coordinates directly
+  if (!geo && matchedZone) {
+    geo = {
+      lat: matchedZone.lat,
+      lng: matchedZone.lng,
+      displayName: `Região CEP ${cleanCep.slice(0, 5)} - ${neighborhood || city}`,
+    };
+  }
+
+  // Attempt 4: If still not found and we have a neighborhood
+  if (!geo && neighborhood) {
+    geo = await geocodeAddress(`${neighborhood}, Zona Sul, São Paulo, Brasil`, true);
+  }
+
+  // 4. Distance and Fee calculation
   if (geo) {
     let finalDistanceKm: number | null = await getDrivingRouteDistanceKm(geo.lat, geo.lng);
     let source: DeliveryCalculationResult['source'] = 'driving_route';
@@ -386,17 +428,24 @@ export const calculateDeliveryByCep = async (
     };
   }
 
-  // 4. Fallback estimation by CEP prefix (São Paulo zones)
+  // 5. Fallback estimation by CEP prefix if all services fail
   const prefix5 = cleanCep.slice(0, 5);
-  let estimatedKm = 3.5;
-  if (prefix5.startsWith('058')) {
-    estimatedKm = 1.0; // Cohab Adventista / Capão Redondo local
+  let estimatedKm = 2.5;
+
+  if (prefix5.startsWith('05868')) {
+    estimatedKm = 0.5; // Cohab Adventista local
+  } else if (prefix5.startsWith('058')) {
+    estimatedKm = 1.8; // Capão Redondo local
   } else if (prefix5.startsWith('057')) {
-    estimatedKm = 5.0; // Campo Limpo
+    estimatedKm = 2.8; // Campo Limpo / Jardim Ipê
+  } else if (prefix5.startsWith('049')) {
+    estimatedKm = 4.5; // Jardim Ângela
+  } else if (prefix5.startsWith('067')) {
+    estimatedKm = 5.0; // Taboão da Serra
   } else if (prefix5.startsWith('047') || prefix5.startsWith('048')) {
-    estimatedKm = 7.5; // Santo Amaro / Grajaú
-  } else if (prefix5.startsWith('06')) {
-    estimatedKm = 8.5; // Taboão da Serra / Embu
+    estimatedKm = 7.0; // Santo Amaro / Socorro
+  } else if (prefix5.startsWith('068')) {
+    estimatedKm = 8.5; // Embu das Artes
   } else if (prefix5.startsWith('01') || prefix5.startsWith('02') || prefix5.startsWith('03')) {
     estimatedKm = 18.0; // Centro / Zona Norte / Zona Leste (> 15 km)
   }
