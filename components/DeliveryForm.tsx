@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   calculateDeliveryByCep,
   formatCepString,
+  getGoogleMapsRouteUrl,
   STORE_INFO,
   type DeliveryCalculationResult,
 } from '../utils/deliveryCalculator';
@@ -38,6 +39,22 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
 }) => {
   const [isSearchingCep, setIsSearchingCep] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Opens Google Maps directions in new tab from store origin (05868-140) to client destination
+  const handleOpenGoogleMapsRoute = () => {
+    const clean = data.cep.replace(/\D/g, '');
+    if (clean.length !== 8) {
+      setSearchError('Por favor, digite um CEP válido com 8 dígitos para ver a rota no Maps.');
+      return;
+    }
+    const dest =
+      data.fullAddress ||
+      (data.street
+        ? `${data.street}, ${data.number || ''}, São Paulo - SP, CEP ${data.cep}`
+        : data.cep);
+    const mapsUrl = getGoogleMapsRouteUrl(data.cep, dest);
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+  };
 
   // Helper to trigger calculation by CEP + number + complement
   const triggerCalculation = async (
@@ -345,6 +362,24 @@ export const DeliveryForm: React.FC<DeliveryFormProps> = ({
             💡 Digite o seu CEP acima para o sistema calcular automaticamente a distância e o frete exato (R$ 2,50/km).
           </div>
         )}
+
+        {/* Botão Ver Distância/Rota no Maps estilo solicitado pelo cliente */}
+        <div className="pt-1.5 border-t border-stone-200">
+          <button
+            type="button"
+            onClick={handleOpenGoogleMapsRoute}
+            disabled={data.cep.replace(/\D/g, '').length !== 8}
+            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
+              data.cep.replace(/\D/g, '').length === 8
+                ? 'bg-[#25d366] hover:bg-[#128c7e] text-white shadow-sm hover:scale-[1.01]'
+                : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+            }`}
+            title="Abrir rota no Google Maps com partida da nossa loja (CEP 05868-140) até seu endereço"
+          >
+            <span>🗺️</span>
+            <span>Ver Distância no Maps (Origem: 05868-140)</span>
+          </button>
+        </div>
       </div>
 
       {/* Radius Warning: If distance > 15 km */}

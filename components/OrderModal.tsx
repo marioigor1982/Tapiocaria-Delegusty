@@ -296,6 +296,7 @@ const OrderModal: React.FC<OrderModalProps> = ({
       ].filter(Boolean).join(', ');
 
       message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
+      message += `🗺️ *Rota no Google Maps:* https://www.google.com/maps/dir/?api=1&origin=05868-140&destination=${encodeURIComponent(finalAddress || deliveryData.cep)}&travelmode=driving\n`;
     } else {
       message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
       message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;

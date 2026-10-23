@@ -497,3 +497,21 @@ export const calculateDeliveryFee = async (
   }
   return calculateDeliveryByCep(trimmed.replace(/\D/g, ''));
 };
+
+/**
+ * Generates a Google Maps directions URL between store CEP and destination CEP / address
+ * Origin: Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP (05868-140)
+ */
+export const getGoogleMapsRouteUrl = (
+  destinationCep: string,
+  destinationAddress?: string
+): string => {
+  const cepOrigem = STORE_INFO.cep; // 05868-140
+  const dest = (destinationAddress && destinationAddress.length > 5)
+    ? destinationAddress.trim()
+    : (destinationCep ? `CEP ${destinationCep.trim()}, São Paulo, SP` : 'São Paulo, SP');
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(
+    cepOrigem
+  )}&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+};
