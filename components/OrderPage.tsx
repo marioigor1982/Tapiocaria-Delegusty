@@ -7,7 +7,6 @@ import ProductDetailModal from './ProductDetailModal';
 import ThermalReceiptModal from './ThermalReceiptModal';
 import { useStoreStatus } from '../hooks/useStoreStatus';
 import { STORE_INFO } from '../utils/deliveryCalculator';
-import DeliveryForm, { type DeliveryAddressData } from './DeliveryForm';
 
 interface OrderPageProps {
   allItems: MenuItem[];
@@ -20,14 +19,6 @@ const parsePrice = (priceStr: string): number => {
   const cleaned = priceStr.replace('R$', '').replace(/\s/g, '').replace(',', '.');
   const val = parseFloat(cleaned);
   return isNaN(val) ? 0 : val;
-};
-
-// Utility to parse typed shipping fee '5,00' or '10'
-const parseFee = (feeStr: string): number => {
-  if (!feeStr) return 0;
-  const cleaned = feeStr.replace('R$', '').replace(/\s/g, '').replace(',', '.');
-  const val = parseFloat(cleaned);
-  return isNaN(val) || val < 0 ? 0 : val;
 };
 
 // Utility to format price number to 'R$ 12,00'
@@ -81,25 +72,6 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
   const [showSummaryDrawer, setShowSummaryDrawer] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedDetailItem, setSelectedDetailItem] = useState<MenuItem | null>(null);
-
-  // Modalidade de Pedido: Retirada ou Entrega
-  const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
-  const [deliveryData, setDeliveryData] = useState<DeliveryAddressData>({
-    cep: '',
-    street: '',
-    number: '',
-    complement: '',
-    neighborhood: '',
-    city: 'São Paulo',
-    state: 'SP',
-    fee: 0,
-    feeInput: '',
-    fullAddress: '',
-  });
-
-  const handleDeliveryDataChange = (updated: Partial<DeliveryAddressData>) => {
-    setDeliveryData((prev) => ({ ...prev, ...updated }));
-  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -180,15 +152,9 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
     return selectedItemsList.reduce((acc, curr) => acc + curr.subtotal, 0);
   }, [selectedItemsList]);
 
-  // Valor do frete (calculado estritamente pela distância × R$ 2,50/km)
-  const deliveryFee = useMemo(() => {
-    return orderType === 'delivery' ? deliveryData.fee : 0;
-  }, [orderType, deliveryData.fee]);
-
-  // Valor total final: subtotal + frete
-  const grandTotalPrice = useMemo(() => {
-    return subtotalProducts + deliveryFee;
-  }, [subtotalProducts, deliveryFee]);
+  // Modalidade estrita: Somente Retirada no Balcão (Frete Grátis)
+  const deliveryFee = 0;
+  const grandTotalPrice = subtotalProducts;
 
   // Send WhatsApp order
   const handleSendWhatsApp = () => {
@@ -197,18 +163,9 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
       return;
     }
 
-    const isDelivery = orderType === 'delivery';
-
-    if (isDelivery) {
-      if (!deliveryData.number.trim()) {
-        alert('Por favor, informe ao menos o número da residência/comércio para a entrega (obrigatório).');
-        return;
-      }
-    }
-
     const greeting = getTimeGreeting();
 
-    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA PRÓPRIA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
+    let message = `${greeting}! Gostaria de fazer um pedido para *RETIRADA NO BALCÃO* na Tapioca Delegusty:\n\n`;
     message += `📋 *ITENS DO PEDIDO:*\n`;
 
     selectedItemsList.forEach((entry) => {
@@ -217,29 +174,9 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
     message += `\n📦 *TOTAL DE ITENS:* ${totalItemCount} un\n`;
     message += `💵 *SUBTOTAL DOS PRODUTOS:* ${formatPrice(subtotalProducts)}\n`;
-
-    if (isDelivery) {
-      message += `🛵 *MODALIDADE:* Entrega Própria (Delivery)\n`;
-      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar com a loja via WhatsApp'}\n`;
-      message += `💰 *VALOR TOTAL:* ${deliveryFee > 0 ? formatPrice(grandTotalPrice) : `${formatPrice(subtotalProducts)} (+ frete a combinar)`}\n`;
-      
-      const finalAddress = deliveryData.fullAddress || [
-        deliveryData.street ? `${deliveryData.street}, Nº ${deliveryData.number}` : (deliveryData.number ? `Nº ${deliveryData.number}` : ''),
-        deliveryData.complement,
-        deliveryData.neighborhood,
-        `${deliveryData.city} - ${deliveryData.state}`,
-        deliveryData.cep ? `CEP ${deliveryData.cep}` : '',
-      ].filter(Boolean).join(', ');
-
-      if (finalAddress) {
-        message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
-      }
-      message += `🗺️ *Ver Rota no Google Maps:* https://www.google.com/maps/dir/?api=1&origin=05868-140&destination=${encodeURIComponent(finalAddress || deliveryData.cep || 'São Paulo, SP')}&travelmode=driving\n`;
-    } else {
-      message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
-      message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
-      message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140\n`;
-    }
+    message += `🏪 *MODALIDADE:* Retirada no Balcão da Loja (Frete Grátis)\n`;
+    message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
+    message += `\n📍 *Local de Retirada:* ${STORE_INFO.fullAddress}\n`;
 
     if (customerName.trim()) {
       message += `\n👤 *Nome do Cliente:* ${customerName.trim()}\n`;
@@ -278,7 +215,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
         <div className="bg-gradient-to-r from-orange-700 via-orange-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-6 relative overflow-hidden">
           <div className="relative z-10 max-w-3xl">
             <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3">
-              {storeStatus.isOpen ? 'Simulação & Pedido Rápido' : 'Consulta do Cardápio'}
+              {storeStatus.isOpen ? 'Retirada no Balcão • Loja Aberta' : 'Consulta do Cardápio • Fechado'}
             </span>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-ubuntu mb-3 tracking-tight">
               Faça seu Pedido
@@ -286,11 +223,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
             <p className="text-orange-100 text-sm sm:text-base leading-relaxed">
               {storeStatus.isOpen ? (
                 <>
-                  Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. Você pode escolher entre <strong>Retirada no Balcão</strong> ou <strong>Entrega (Delivery) com cálculo de frete</strong>!
+                  Monte seu pedido facilmente: clique no botão <strong className="text-white bg-green-600 px-2 py-0.5 rounded font-black">+</strong> para adicionar os sabores e quantidades desejadas. Nosso atendimento para pedidos é exclusivo para <strong>Retirada no Balcão da loja com Frete Grátis</strong>!
                 </>
               ) : (
                 <>
-                  Consulte todos os nossos sabores, fotos, ingredientes e preços abaixo. A opção de realizar pedidos é liberada automaticamente no nosso horário de funcionamento (<strong>Segunda, Quarta a Sábado das 18h às 23:59h • Domingo das 17h às 23:59h</strong>).
+                  Consulte todos os nossos sabores, fotos, ingredientes e preços abaixo. A emissão de pedidos é liberada automaticamente no nosso horário de funcionamento (<strong>Segunda, Quarta a Sábado das 18h às 23:59h • Domingo das 17h às 23:59h</strong>).
                 </>
               )}
             </p>
@@ -320,10 +257,16 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     {storeStatus.hoursText}
                   </span>
                 </div>
-                <p className="text-sm text-stone-700 mt-1.5 leading-relaxed">
-                  A emissão e envio de pedidos ficam liberados durante nosso horário de atendimento. <strong>Você pode navegar e visualizar os detalhes, fotos e ingredientes de todos os produtos normalmente!</strong>
-                </p>
-                <p className="text-xs text-amber-900 font-bold mt-1">
+                {storeStatus.specialNotice ? (
+                  <p className="text-sm font-semibold text-amber-950 mt-1.5 bg-amber-100/80 p-2.5 rounded-xl border border-amber-300">
+                    📢 {storeStatus.specialNotice}
+                  </p>
+                ) : (
+                  <p className="text-sm text-stone-700 mt-1.5 leading-relaxed">
+                    A emissão e envio de pedidos ficam liberados durante nosso horário de atendimento. <strong>Você pode navegar e visualizar os detalhes, fotos e ingredientes de todos os produtos normalmente!</strong>
+                  </p>
+                )}
+                <p className="text-xs text-amber-900 font-bold mt-2">
                   📅 {storeStatus.nextOpenText}
                 </p>
               </div>
@@ -338,130 +281,70 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           </div>
         )}
 
-        {/* Modalidade de Pedido: Botão Toggle Retirada vs Entrega */}
-        <div className="bg-white border border-stone-200 rounded-3xl p-4 sm:p-5 mb-8 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-orange-700">
-                Opção de Atendimento
-              </span>
-              <h2 className="text-lg sm:text-xl font-bold text-stone-900 font-ubuntu">
-                Como você deseja receber o pedido?
-              </h2>
+        {/* Modalidade de Atendimento: Somente Retirada no Balcão */}
+        <div className="bg-white border-2 border-orange-200 rounded-3xl p-4 sm:p-6 mb-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-600 text-white flex items-center justify-center font-black text-2xl shadow-sm flex-shrink-0">
+                🏪
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-orange-700">
+                    Modalidade do Pedido
+                  </span>
+                  <span className="text-xs bg-green-600 text-white font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                    Retirada no Balcão • Frete Grátis
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900 font-ubuntu">
+                  Retirada no Balcão da Loja
+                </h2>
+              </div>
             </div>
 
-            {/* Toggle Button (Retirada vs Entrega) */}
-            <div className="inline-flex p-1 bg-stone-100 border border-stone-300 rounded-2xl w-full sm:w-auto shadow-inner">
-              <button
-                type="button"
-                onClick={() => setOrderType('pickup')}
-                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  orderType === 'pickup'
-                    ? 'bg-orange-600 text-white shadow-md'
-                    : 'text-stone-700 hover:text-stone-950'
-                }`}
-              >
-                <span>🏪 Retirada no Balcão</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType('delivery')}
-                className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  orderType === 'delivery'
-                    ? 'bg-orange-600 text-white shadow-md'
-                    : 'text-stone-700 hover:text-stone-950'
-                }`}
-              >
-                <span>🛵 Entrega (Delivery)</span>
-              </button>
+            <div className="text-xs bg-amber-50 text-amber-900 px-3.5 py-2 rounded-xl border border-amber-200 font-medium">
+              📍 <strong>Local:</strong> Travessa Casca Preciosa, 54 - Cohab Adventista, SP
             </div>
           </div>
 
-          {/* Conditional block depending on orderType */}
-          {orderType === 'pickup' ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
-                🏪
+          <div className="mt-3.5 bg-orange-50/60 border border-orange-100 rounded-2xl p-3.5 text-xs text-stone-700 leading-relaxed">
+            Faça seu pedido diretamente pelo nosso site e envie para o nosso WhatsApp. Preparamos tudo quentinho com muito carinho para você retirar diretamente no balcão da loja!
+          </div>
+
+          {/* Dados Opcionais do Cliente */}
+          <div className="mt-4 pt-3.5 border-t border-stone-100">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-2">
+              Identificação do Cliente (Opcional):
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Nome do Cliente (opcional):
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: João da Silva (opcional)"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
+                />
               </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-amber-950 flex items-center gap-2">
-                  <span>Retirada no Balcão da Loja</span>
-                  <span className="text-[11px] bg-green-600 text-white font-bold px-2 py-0.5 rounded-full">
-                    Frete Grátis
-                  </span>
-                </h3>
-                <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                  Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140. Você envia o pedido pelo WhatsApp e retira quentinho na hora combinada!
-                </p>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Telefone / WhatsApp (opcional):
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Ex: (11) 98765-4321 (opcional)"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900 shadow-inner"
+                />
               </div>
             </div>
-          ) : (
-            <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-4 sm:p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-orange-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center flex-shrink-0 font-bold text-lg shadow-xs">
-                    🛵
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-orange-950 flex items-center gap-2">
-                      <span>Nossa Entrega Própria (Delivery)</span>
-                      <span className="text-[11px] bg-orange-200 text-orange-900 font-bold px-2 py-0.5 rounded-full">
-                        Valor a Combinar / Rota no Maps
-                      </span>
-                    </h3>
-                    <p className="text-xs text-stone-600">
-                      Informe seu CEP, número e complemento. Você pode abrir o Google Maps para ver a rota e combinar a taxa diretamente pelo WhatsApp!
-                    </p>
-                  </div>
-                </div>
-
-                <div className="text-[11px] bg-white text-stone-600 px-3 py-1.5 rounded-xl border border-orange-200 sm:text-right">
-                  <span className="font-bold text-orange-800">Partida:</span> Cohab Adventista (SP)
-                </div>
-              </div>
-
-              {/* Formulário de Delivery: CEP obrigatório, número, complemento e cálculo estrito */}
-              <DeliveryForm
-                data={deliveryData}
-                onChange={handleDeliveryDataChange}
-                onSwitchToPickup={() => setOrderType('pickup')}
-              />
-
-              {/* Informações do Cliente (Nome e Telefone como Opcional) */}
-              <div className="pt-2 border-t border-orange-200">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-2">
-                  Dados do Cliente (Opcionais):
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
-                      Nome do Cliente (opcional):
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: João da Silva (opcional)"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-stone-700 mb-1">
-                      Telefone / WhatsApp (opcional):
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="Ex: (11) 98765-4321 (opcional)"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 text-stone-900"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Category Filters & Search */}
@@ -722,13 +605,8 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                         <span>{totalItemCount === 1 ? '1 item' : `${totalItemCount} itens`}</span>
                         <span>•</span>
                         <span className="font-bold text-orange-800">
-                          {orderType === 'delivery' ? '🛵 Entrega' : '🏪 Retirada'}
+                          🏪 Retirada no Balcão (Frete Grátis)
                         </span>
-                        {orderType === 'delivery' && deliveryFee > 0 && (
-                          <span className="text-xs text-stone-600">
-                            (+ {formatPrice(deliveryFee)} frete)
-                          </span>
-                        )}
                       </div>
                       <div className="text-xl sm:text-2xl font-black text-stone-900">
                         Total: <span className="text-orange-700">{formatPrice(grandTotalPrice)}</span>
@@ -835,9 +713,7 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                 <div>
                   <h3 className="text-xl font-bold font-ubuntu">Confirmar e Enviar Pedido</h3>
                   <p className="text-xs text-orange-100">
-                    {orderType === 'delivery'
-                      ? 'Entrega em Domicílio (com Frete)'
-                      : 'Retirada na loja • Travessa Casca Preciosa, 54'}
+                    Retirada no Balcão da Loja • Travessa Casca Preciosa, 54
                   </p>
                 </div>
                 <button
@@ -851,63 +727,26 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
               {/* Body */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                {/* Modalidade Toggle Inside Summary Drawer */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1.5 uppercase tracking-wider">
-                    Modalidade de Pedido:
-                  </label>
-                  <div className="bg-stone-100 p-1 rounded-2xl flex items-center border border-stone-300">
-                    <button
-                      type="button"
-                      onClick={() => setOrderType('pickup')}
-                      className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        orderType === 'pickup'
-                          ? 'bg-orange-600 text-white shadow-md'
-                          : 'text-stone-700 hover:text-stone-900'
-                      }`}
-                    >
-                      <span>🏪 Retirada no Balcão</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOrderType('delivery')}
-                      className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                        orderType === 'delivery'
-                          ? 'bg-orange-600 text-white shadow-md'
-                          : 'text-stone-700 hover:text-stone-900'
-                      }`}
-                    >
-                      <span>🛵 Entrega (Delivery)</span>
-                    </button>
+                {/* Informação da Retirada */}
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">🏪</span>
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
+                      Modalidade: Retirada no Balcão (Frete Grátis)
+                    </h4>
+                    <p className="text-xs text-stone-700 mt-0.5">
+                      <strong>Endereço de Retirada:</strong> Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP (CEP 05868-140)
+                    </p>
                   </div>
                 </div>
 
-                {/* Se Entrega: Formulário com CEP obrigatório, número, complemento e frete automático */}
-                {orderType === 'delivery' && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 space-y-3">
-                    <div className="flex items-center justify-between text-xs pb-1 border-b border-orange-200">
-                      <span className="font-bold text-orange-900">🛵 Entrega Própria</span>
-                      <span className="text-[10px] bg-orange-200 text-orange-950 font-bold px-2 py-0.5 rounded-full">
-                        A combinar / Maps
-                      </span>
-                    </div>
-
-                    <DeliveryForm
-                      data={deliveryData}
-                      onChange={handleDeliveryDataChange}
-                      onSwitchToPickup={() => setOrderType('pickup')}
-                      compact
-                    />
-                  </div>
-                )}
-
                 {/* Items List */}
-                <div className="border border-stone-200 rounded-2xl p-3 bg-stone-50 space-y-2 max-h-40 overflow-y-auto">
+                <div className="border border-stone-200 rounded-2xl p-3 bg-stone-50 space-y-2 max-h-48 overflow-y-auto">
                   <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-1">
                     Itens Selecionados ({totalItemCount} un):
                   </div>
                   {selectedItemsList.map((entry) => (
-                    <div key={entry.item.id} className="flex justify-between items-center text-xs py-1 border-b border-stone-200 last:border-0">
+                    <div key={entry.item.id} className="flex justify-between items-center text-xs py-1.5 border-b border-stone-200 last:border-0">
                       <div className="flex-1 min-w-0 pr-2">
                         <span className="font-black text-orange-700">{entry.quantity}x</span>{' '}
                         <span className="font-semibold text-stone-900">{entry.item.name}</span>
@@ -951,11 +790,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
 
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Observações (opcional):
+                      Observações / Preferências (opcional):
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="Ex: Sem orégano, caprichar no leite condensado..."
+                      placeholder="Ex: Sem cebola, massa bem crocante, caprichar no recheio..."
                       value={observations}
                       onChange={(e) => setObservations(e.target.value)}
                       className="w-full px-3 py-2 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
@@ -970,19 +809,11 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
                     <span className="font-bold text-stone-800">{formatPrice(subtotalProducts)}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs text-stone-600">
-                    <span>{orderType === 'delivery' ? 'Taxa de Entrega (Frete):' : 'Frete / Retirada:'}</span>
-                    <span className={`font-bold ${orderType === 'delivery' ? 'text-orange-700' : 'text-green-700'}`}>
-                      {orderType === 'delivery'
-                        ? deliveryFee > 0
-                          ? `+ ${formatPrice(deliveryFee)}`
-                          : 'R$ 0,00'
-                        : 'Grátis (Retirada)'}
-                    </span>
+                    <span>Taxa de Entrega / Frete:</span>
+                    <span className="font-bold text-green-700">Grátis (Retirada no Balcão)</span>
                   </div>
                   <div className="pt-2 border-t border-orange-200 flex justify-between items-baseline">
-                    <span className="text-sm font-bold text-stone-900">
-                      {orderType === 'delivery' ? 'Total com Frete:' : 'Total a Pagar na Retirada:'}
-                    </span>
+                    <span className="text-sm font-bold text-stone-900">Total a Pagar na Retirada:</span>
                     <span className="text-2xl font-black text-orange-700">{formatPrice(grandTotalPrice)}</span>
                   </div>
                 </div>
@@ -1042,9 +873,9 @@ const OrderPage: React.FC<OrderPageProps> = ({ allItems, onBack, initialItemId }
           totalPrice={grandTotalPrice}
           subtotalItems={subtotalProducts}
           totalItemCount={totalItemCount}
-          orderType={orderType}
-          deliveryFee={deliveryFee}
-          deliveryAddress={deliveryData.fullAddress}
+          orderType="pickup"
+          deliveryFee={0}
+          deliveryAddress={STORE_INFO.fullAddress}
         />
       </div>
     </div>

@@ -259,6 +259,11 @@ const Footer: React.FC = () => {
                         </span>
                     </div>
                 </div>
+                {storeStatus.isSpecialClosedToday && (
+                  <div className="mt-3 text-xs text-amber-300 bg-amber-950/70 p-2 rounded-xl border border-amber-700/60 leading-relaxed">
+                    📢 <strong>Aviso:</strong> Excepcionalmente neste domingo (25/10) a loja está fechada. Reabriremos amanhã (segunda) às 18h!
+                  </div>
+                )}
             </div>
           </div>
 

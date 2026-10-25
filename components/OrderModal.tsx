@@ -5,7 +5,6 @@ import { SearchIcon } from './icons/SearchIcon';
 import { PrinterIcon } from './icons/PrinterIcon';
 import ThermalReceiptModal from './ThermalReceiptModal';
 import { STORE_INFO } from '../utils/deliveryCalculator';
-import DeliveryForm, { type DeliveryAddressData } from './DeliveryForm';
 
 const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" {...props}>
@@ -100,25 +99,6 @@ const OrderModal: React.FC<OrderModalProps> = ({
   const [observations, setObservations] = useState('');
   const [showOnlySelected, setShowOnlySelected] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-
-  // Modalidade: Retirada vs Entrega
-  const [orderType, setOrderType] = useState<'pickup' | 'delivery'>('pickup');
-  const [deliveryData, setDeliveryData] = useState<DeliveryAddressData>({
-    cep: '',
-    street: '',
-    number: '',
-    complement: '',
-    neighborhood: '',
-    city: 'São Paulo',
-    state: 'SP',
-    fee: 0,
-    feeInput: '',
-    fullAddress: '',
-  });
-
-  const handleDeliveryDataChange = (updated: Partial<DeliveryAddressData>) => {
-    setDeliveryData((prev) => ({ ...prev, ...updated }));
-  };
 
   // If initial item changes, add it
   React.useEffect(() => {
@@ -222,13 +202,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
     return selectedItemsList.reduce((acc, curr) => acc + curr.subtotal, 0);
   }, [selectedItemsList]);
 
-  const deliveryFee = useMemo(() => {
-    return orderType === 'delivery' ? deliveryData.fee : 0;
-  }, [orderType, deliveryData.fee]);
-
-  const grandTotalPrice = useMemo(() => {
-    return subtotalProducts + deliveryFee;
-  }, [subtotalProducts, deliveryFee]);
+  const deliveryFee = 0;
+  const grandTotalPrice = subtotalProducts;
 
   // Send WhatsApp order
   const handleSendWhatsApp = () => {
@@ -237,18 +212,9 @@ const OrderModal: React.FC<OrderModalProps> = ({
       return;
     }
 
-    const isDelivery = orderType === 'delivery';
-
-    if (isDelivery) {
-      if (!deliveryData.number.trim()) {
-        alert('Por favor, informe ao menos o número da residência/comércio para a entrega (obrigatório).');
-        return;
-      }
-    }
-
     const greeting = getTimeGreeting();
 
-    let message = `${greeting}! Gostaria de fazer um pedido para *${isDelivery ? 'ENTREGA PRÓPRIA (DELIVERY)' : 'RETIRADA NA LOJA'}* na Tapioca Delegusty:\n\n`;
+    let message = `${greeting}! Gostaria de fazer um pedido para *RETIRADA NO BALCÃO* na Tapioca Delegusty:\n\n`;
     message += `📋 *ITENS DO PEDIDO:*\n`;
 
     selectedItemsList.forEach((entry) => {
@@ -257,29 +223,9 @@ const OrderModal: React.FC<OrderModalProps> = ({
 
     message += `\n📦 *TOTAL DE ITENS:* ${totalItemCount} un\n`;
     message += `💵 *SUBTOTAL DOS PRODUTOS:* ${formatPrice(subtotalProducts)}\n`;
-
-    if (isDelivery) {
-      message += `🛵 *MODALIDADE:* Entrega Própria (Delivery)\n`;
-      message += `🚚 *VALOR DO FRETE:* ${deliveryFee > 0 ? formatPrice(deliveryFee) : 'A combinar com a loja via WhatsApp'}\n`;
-      message += `💰 *VALOR TOTAL:* ${deliveryFee > 0 ? formatPrice(grandTotalPrice) : `${formatPrice(subtotalProducts)} (+ frete a combinar)`}\n`;
-
-      const finalAddress = deliveryData.fullAddress || [
-        deliveryData.street ? `${deliveryData.street}, Nº ${deliveryData.number}` : (deliveryData.number ? `Nº ${deliveryData.number}` : ''),
-        deliveryData.complement,
-        deliveryData.neighborhood,
-        `${deliveryData.city} - ${deliveryData.state}`,
-        deliveryData.cep ? `CEP ${deliveryData.cep}` : '',
-      ].filter(Boolean).join(', ');
-
-      if (finalAddress) {
-        message += `\n📍 *Endereço de Entrega:* ${finalAddress}\n`;
-      }
-      message += `🗺️ *Ver Rota no Google Maps:* https://www.google.com/maps/dir/?api=1&origin=05868-140&destination=${encodeURIComponent(finalAddress || deliveryData.cep || 'São Paulo, SP')}&travelmode=driving\n`;
-    } else {
-      message += `🏪 *MODALIDADE:* Retirada no Balcão (Frete Grátis)\n`;
-      message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
-      message += `\n📍 *Local de Retirada:* Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP, CEP 05868-140\n`;
-    }
+    message += `🏪 *MODALIDADE:* Retirada no Balcão da Loja (Frete Grátis)\n`;
+    message += `💰 *VALOR TOTAL A PAGAR:* ${formatPrice(grandTotalPrice)}\n`;
+    message += `\n📍 *Local de Retirada:* ${STORE_INFO.fullAddress}\n`;
 
     if (customerName.trim()) {
       message += `\n👤 *Nome do Cliente:* ${customerName.trim()}\n`;
@@ -595,55 +541,23 @@ const OrderModal: React.FC<OrderModalProps> = ({
                 )}
               </div>
 
-              {/* Botão Toggle: Retirada vs Entrega */}
-              <div className="mb-4">
-                <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1.5">
-                  Modalidade do Pedido:
-                </label>
-                <div className="bg-stone-100 p-1 rounded-2xl flex items-center border border-stone-300">
-                  <button
-                    type="button"
-                    onClick={() => setOrderType('pickup')}
-                    className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      orderType === 'pickup'
-                        ? 'bg-orange-600 text-white shadow-sm'
-                        : 'text-stone-700 hover:text-stone-900'
-                    }`}
-                  >
-                    <span>🏪 Retirada</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOrderType('delivery')}
-                    className={`flex-1 py-2 px-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      orderType === 'delivery'
-                        ? 'bg-orange-600 text-white shadow-sm'
-                        : 'text-stone-700 hover:text-stone-900'
-                    }`}
-                  >
-                    <span>🛵 Entrega</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Se entrega, formulário com CEP obrigatório, número, complemento e frete automático estrito */}
-              {orderType === 'delivery' && (
-                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3 mb-4 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs pb-1 border-b border-orange-200">
-                    <span className="font-bold text-orange-900">🛵 Entrega Própria</span>
-                    <span className="text-[10px] bg-orange-200 text-orange-950 font-bold px-2 py-0.5 rounded-full">
-                      A combinar / Maps
+              {/* Modalidade Exclusiva: Retirada no Balcão */}
+              <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-start gap-2.5">
+                <span className="text-xl flex-shrink-0">🏪</span>
+                <div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                      Retirada no Balcão
+                    </span>
+                    <span className="text-[10px] bg-green-600 text-white font-bold px-2 py-0.5 rounded-full">
+                      Frete Grátis
                     </span>
                   </div>
-
-                  <DeliveryForm
-                    data={deliveryData}
-                    onChange={handleDeliveryDataChange}
-                    onSwitchToPickup={() => setOrderType('pickup')}
-                    compact
-                  />
+                  <p className="text-[11px] text-stone-600 mt-0.5">
+                    Travessa Casca Preciosa, 54 - Cohab Adventista, São Paulo - SP
+                  </p>
                 </div>
-              )}
+              </div>
 
               {/* Items List in Summary */}
               {selectedItemsList.length === 0 ? (
@@ -723,14 +637,8 @@ const OrderModal: React.FC<OrderModalProps> = ({
                   <span className="font-semibold text-gray-700">{formatPrice(subtotalProducts)}</span>
                 </div>
                 <div className="flex justify-between items-center text-gray-500">
-                  <span>{orderType === 'delivery' ? 'Frete / Entrega:' : 'Modalidade:'}</span>
-                  <span className={`font-bold ${orderType === 'delivery' ? 'text-orange-700' : 'text-green-700'}`}>
-                    {orderType === 'delivery'
-                      ? deliveryFee > 0
-                        ? `+ ${formatPrice(deliveryFee)}`
-                        : 'R$ 0,00'
-                      : 'Grátis (Retirada)'}
-                  </span>
+                  <span>Modalidade:</span>
+                  <span className="font-bold text-green-700">Grátis (Retirada no Balcão)</span>
                 </div>
                 <div className="flex justify-between items-baseline pt-1 border-t border-gray-100">
                   <span className="text-sm font-bold text-gray-800">Total a Pagar:</span>
@@ -784,9 +692,9 @@ const OrderModal: React.FC<OrderModalProps> = ({
           totalPrice={grandTotalPrice}
           subtotalItems={subtotalProducts}
           totalItemCount={totalItemCount}
-          orderType={orderType}
-          deliveryFee={deliveryFee}
-          deliveryAddress={deliveryData.fullAddress}
+          orderType="pickup"
+          deliveryFee={0}
+          deliveryAddress={STORE_INFO.fullAddress}
         />
       </div>
 
